@@ -104,6 +104,13 @@ git commit --global user.name "dltmdgh1994"
 
 git commit --global user.email "dltmdgh1997@gmail.com"
 
+``` bash
+$ git config --global user.name
+dltmdgh1994
+```
+
+
+
 
 
 
