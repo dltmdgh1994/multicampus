@@ -98,6 +98,8 @@ $ git log --oneline -1
 bbe02e6 (HEAD -> master) Third commit
 ```
 
+
+
 ## 4. git commit author 설정
 
 git commit --global user.name "dltmdgh1994"
@@ -111,7 +113,33 @@ dltmdgh1994
 
 
 
+## 5. 원격 저장소(remote repository) 활용 기초
 
+> 다양한 원격저장소 서비스 중 Github를 기준
 
+* 원격저장소 설정
 
+  ``` bash
+  $git remote add origin __url__
+  ```
+
+* push
+
+  ```bash
+  $git push -u origin master
+  ```
+
+* 설정된 원격저장소를 확인
+
+  ```bash
+  $ git remote -v
+  origin  https://github.com/dltmdgh1994/multicampus.git (fetch)
+  origin  https://github.com/dltmdgh1994/multicampus.git (push)
+  ```
+
+* 원격저장소 수정
+
+  ```bash
+  $ git remote set-url origin https://github.com/dltmdgh1994/multicampus.git
+  ```
 
