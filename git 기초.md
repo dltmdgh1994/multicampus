@@ -143,3 +143,11 @@ dltmdgh1994
   $ git remote set-url origin https://github.com/dltmdgh1994/multicampus.git
   ```
 
+# git ignore
+
+```bash
+# gitignore를 생성
+$ touch .gitignore
+```
+
+* 내부에 commit하고 싶지 않은 것들의 목록 작성
