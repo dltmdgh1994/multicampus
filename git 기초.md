@@ -151,3 +151,5 @@ $ touch .gitignore
 ```
 
 * 내부에 commit하고 싶지 않은 것들의 목록 작성
+
+![gitignore](md-images/gitignore.PNG)
