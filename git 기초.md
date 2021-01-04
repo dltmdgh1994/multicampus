@@ -169,11 +169,11 @@ $ git clone url
 ## 8. push & pull 
 
 ```bash
-$ git push origin master
+$ git push origin branch명
 ```
 
 ```bash
-$ git pull origin master
+$ git pull origin branch명
 ```
 
 ## 9. Branch
