@@ -8,6 +8,8 @@
 # 초기화
 $ git init
 Reinitialized existing Git repository in C:/Users/dltmd/OneDrive/바탕 화면/Prac/.git/
+
+$ git branch -M main
 ```
 
 * `.git` 폴더가 생성되고, 여기에 모든 git과 관련된 정보들이 저장
