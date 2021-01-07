@@ -139,24 +139,102 @@ print('data_list : {}'.format(data_list)) # [10,20,100]   => mutable (list,dict)
 
 
 
-## 6. Class 선언
+## 6. Class
 
 ```python
 class Student(object):
+    
+    scholarship_rate = 3.0  # class variable 
+    
     # initializer(생성자-constructor)
     def __init__(self, name, dept, num, grade):
         # 속성을 __init__ 안에서 명시를 해요!
-        self.name = name   # 전달된 값으로 이름속성을 설정
+        print('객체가 생성됩니다!!')
+        self.name = name   # instance variable
         self.dept = dept
         self.num = num
         self.grade = grade
     
-    # 아래의 method는 객체가 가지고 있는 학생의 정보를 문자열로
-    # 리턴하는 역할을 수행하는 method
+    # instance method
     def get_stu_info(self):
         return '이름 : {}, 학과 : {}'.format(self.name,self.dept)
+    
+    # class method를 만들려면 특수한 데코레이터를 이용해야 해요!
+    # class method는 인스턴스가 공유하는 class variable을 생성, 변경, 참조하		기 위해서 사용되요!
+    @classmethod
+    def change_scholaship_rate(cls,rate):
+        cls.scholarship_rate = rate
+        
+    # static method를 만들려면 특수한 데코레이터를 이용해야 해요!
+    @staticmethod
+    def print_hello():
+        print('Hello')
+        
+    # __init__(), __str__(), __del__(), __lt__(), ...
+	# 이 magic function의 특징은 일반적으로 우리가 직접 호출하지 않아요!
+	# 특정 상황이 되면 자동적으로(내부적으로) 호출되요!
+    
+    def __del__(self):   # instance가 메모리에서 삭제될 때 호출
+        print('객체가 삭제되요!!')
+        # 객체가 삭제될 때 이 객체가 사용한 resource를 해제
+        
+    def __str__(self):
+        return '이름은 : {}, 학과는 : {}'.format(self.name, self.dept)
+    
+    def __gt__(self,other): ## >
+        if self.grade > other.grade:
+            return True
+        else:
+            return False
+        
+    def __lt__(self,other): ## <
+        if self.grade < other.grade:
+            return True
+        else:
+            return False 
         
 stu1 = Student('강감찬','경영학과','20201120',3.4)
 print(stu1.get_stu_info()) ##이름 : 강감찬, 학과 : 경영학과
+```
+
+
+
+## 7. 상속
+
+```python
+# 상위 클래스(super class, parent class, base class)
+class Unit(object):
+    def __init__(self,damage, life):
+        self.utype = self.__class__.__name__ 
+        self.damage = damage
+        self.life = life
+        
+# 하위 class(sub class, child class)
+class Marine(Unit):
+    def __init__(self,damage,life,offense_upgrade):
+        super(Marine, self).__init__(damage,life)
+        self.offense_upgrade = offense_upgrade
+
+marine_1 = Marine(300,400,2)
+print(marine_1.damage)
+print(marine_1.utype)
+print(marine_1.offense_upgrade)
+```
+
+
+
+## 8. Module
+
+```python
+# module을 이용하는 이유(파일을 나누어서 작성하는 이유)
+# 코드의 재사용성을 높이고 관리를 쉽게 하기 위함.
+
+# import : module을 불러들이는 키워드.
+#          파일을 객체화 시켜서 우리 코드가 사용하는 메모리에 로드.
+
+import module1 as m1   
+from module1 import my_pi
+from network.my_sub_folder import my_network_module
+
 ```
 
