@@ -334,11 +334,14 @@ print('크기(size) : {}'.format(arr.size)) # 6
 ```python
 import numpy as np
 
-# astype() ndarray의 data type을 변경
+## astype() ndarray의 data type을 변경
 arr = np.array([1.2,2.3,3.5,4.1,5.7])
 arr = arr.astype(np.int32)
 print(arr) ## [1 2 3 4 5]
 
+
+
+## ndarray 생성 방법
 # 특정 형태의 ndarray를 만들어서 내용을 0으로 채움
 # 기본 데이터 타입은 np.float64 
 arr = np.zeros((3,4), dtype=np.int32)
@@ -357,7 +360,8 @@ arr = np.arange(0,10,1) # [ 0  1  2  3  4  5  6  7  8  9 ]
 arr = np.arange(10) # 위와 동일
 
 
-# random기반의 생성방법(방법이 5가지 정도)
+
+## random기반의 생성방법(방법이 5가지 정도)
 # 1. np.random.normal() : 정규분포에서 실수형태의 난수를 추출
 my_mean = 50
 my_std = 2
@@ -373,7 +377,7 @@ arr = np.random.rand(10000)
 arr = np.random.randn(10000)
 
 # 4. np.random.randint(low,high,shape) : 균등분포로 정수 표본을 추출
-arr = np.random.randint(10,100,(10000,)) # 10 ~ 100사이 정수
+arr = np.random.randint(10,100,(10000,)) # 10 ~ 100사이 정수 10000개
 
 # 5. np.random.random() : 0이상 1미만의 실수를 난수로 추출
 #                         균등분포로 난수를 추출
@@ -381,12 +385,14 @@ arr = np.random.randint(10,100,(10000,)) # 10 ~ 100사이 정수
 arr = np.random.random((10000,))
 
 
-# 시드 설정
+
+## 시드 설정
 # 실행할 때 마다 같은 난수가 추출되도록 설정(난수의 재현)
 np.random.seed(3)  # 정수만 사용되고 음수는 사용할 수 없어요!
 
 
-# reshape() => ndarray의 형태를 조절
+
+## reshape() => ndarray의 형태를 조절
 # reshape()함수는 새로운 ndarray를 만들지 않고 view가 생성
 # 메모리를 아끼기 위함
 arr = np.arange(12)  # 12개의 요소를 가지는 1차원의 ndarray
@@ -397,12 +403,154 @@ arr1 = arr.reshape(2,3,-1)  # -1은 특별한 의미를 가져요!
 # view가 아니라 새로운 배열을 생성하고자 할 때는 copy() 이용
 arr1 = arr.reshape(3,4).copy()
 
-# ravel() => ndarray가 가지고있는 모든 요소를 포함하는 1차원의 ndarray로 변경
+
+
+## ravel() => ndarray가 가지고있는 모든 요소를 포함하는 1차원의 ndarray로 변경
 # ravel()함수는 View를 리턴
 arr1 = arr.ravel()
 
-# resize() => 결과를 리턴하지 않고 원본을 바꿔요!
+
+
+## resize() => 결과를 리턴하지 않고 원본을 바꿔요!
 arr.resize(2, 6)
 arr1 = np.resize(arr,(1,6))  # 원본은 불변, 복사복이 만들어져요!
+
+
+
+## boolean mask
+# [ 6 12 13  9 10 12  6 16  1 17]
+# [ True, True, False, False, ... , False] : boolean mask
+# 결국 우리가 구한 boolean mask => arr % 2 == 0
+print(arr % 2 == 0)
+print(arr[arr % 2 == 0])  # boolean indexing
+
+
+## 집계함수
+print(np.sum(arr)) # 합계
+print(arr.sum())   # 위와 동일
+print(np.mean(arr)) # 평균
+print(np.max(arr)) # 최대
+print(np.min(arr)) # 최대
+print(np.argmax(arr)) # 최대값의 index가 리턴 
+print(np.argmin(arr)) # 최대값의 index가 리턴 
+print(np.std(arr))    # 표준편차
+print(np.sqrt(arr))   # 제곱근
+
+
+
+## axis
+# 2차원이면 axis는 0과 1을 사용할 수 있어요!
+# 0 => 행방향(세로방향) , 1 => 열방향(가로방향)
+# 3차원이면 axis는 0,1,2 3개 사용할 수 있어요!
+# 0 => 면, 1 => 행방향, 2 => 열방향
+print(arr.sum(axis=0))
+
+
+
+### sort()
+arr2 = np.sort(arr1) # 인자로 들어가는 원본 ndarray는 변화가 없고
+             		 # 정렬된 복사본이 만들어져서 리턴되요!
+arr.sort()   # 원본 배열을 정렬하고 리턴이 없어요!
+```
+
+
+
+### 3. ndarray 연산
+
+```python
+import numpy as np
+
+arr1 = np.array([[1,2,3],
+                 [4,5,6]])  # 2 x 3 ndarray
+arr2 = np.arange(10,16,1).reshape(2,3).copy() # 2 x 3 ndarray
+arr3 = np.arange(10,16,1).reshape(3,2).copy() # 3 x 2 ndarray
+
+# ndarray 연산의 기본은 같은 위치에 있는 원소끼리 연산을 수행
+# shape이 다르면 연산이 수행되지 않아요!
+print(arr1 + arr2)  # 4칙연산 모두 같아요!
+# [[11 13 15]
+#  [17 19 21]]
+
+# 행렬곱연산
+# 앞쪽 행렬의 열과 뒤쪽 행렬의 행의 수가 일치!!!!!!
+print(np.matmul(arr1,arr3))
+# [[ 76  82]
+#  [184 199]]
+
+print(arr1 + 10)
+# [[11 12 13]
+#  [14 15 16]]
+
+#전치 행렬
+print(arr.T)
+# [[1 4]
+#  [2 5]
+#  [3 6]]
+
+#비교 연산
+import numpy as np
+
+arr1 = np.random.randint(0,10,(2,3))
+arr2 = np.random.randint(0,10,(2,3))
+
+print(arr1 == arr2)  # boolean mask
+# [[False False False]
+#  [False  True False]] 와 같은 형식
+print(arr1 > arr2)  # boolean mask
+
+print(np.array_equal(arr1,arr2)) # False
+```
+
+
+
+### 4. Iterator
+
+```python
+# while문과 iterator를 이용해서 반복처리
+
+import numpy as np
+
+arr = np.array([[1,2,3], 
+                [4,5,6],
+                [7,8,9]])
+
+it = np.nditer(arr, flags=['multi_index'])
+
+while not it.finished:   
+    idx = it.multi_index  # 각 인덱스를 튜플로 나타냄 (0, 0)
+    print(arr[idx], end =' ')
+    it.iternext()    # 화살표 옮기는 작업
+```
+
+
+
+### 5. ndarray concatenate
+
+```python
+import numpy as np
+
+arr = np.array([[1,2,3],
+                [4,5,6]])  # (2,3)
+
+new_row = np.array([7,8,9]) # (3,)
+# concat하기 위해서 shape를 맞춰줘야 한다.
+result = np.concatenate((arr,new_row.reshape(1,3)),axis=0)
+print(result)
+```
+
+
+
+### 6. ndarray delete
+
+```python
+# delete()도 axis를 기준으로 삭제가 진행
+# 만약  axis를 명시하지 않으면 자동으로 1차배열로 변환이 된 후 삭제
+arr = np.array([[1,2,3],
+                [4,5,6]])  # (2,3)
+result = np.delete(arr,1,axis=0)  
+print(result)     # [[1 2 3]] 
+
+result = np.delete(arr,1)  
+print(result)     # [1 3 4 5 6]
 ```
 
