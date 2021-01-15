@@ -100,8 +100,10 @@ Table 형식으로 데이터를 저장하는 자료구조
 ```python
 import numpy as np
 import pandas as pd
+import pymysql
 
-## dict를 사용하는 방법
+## pandas에서 DataFrame을 만드는 여러가지 방법
+# 1. python의 dict(dictionary)를 직접 작성해서 DataFrame을 생성
 my_dict = { 'name' : ['홍길동','신사임당','김연아','강감찬'], 
             'year' : [2015, 2016, 2019, 2016], 
             'point' : [3.5, 1.4, 2.0, 4.5] }
@@ -118,8 +120,138 @@ print(df.values) # 2차원 numpy
                 #  ['김연아' 2019 2.0]
                 #  ['강감찬' 2016 4.5]]
                 
-## csv파일을 읽는 방법
+# 2. CSV파일을 이용해서 DataFrame을 생성하는 방법
 df = pd.read_csv('./movies.csv')
+
+# 3. Database안에 있는 데이터를 이용해서 DataFrame을 생성
+# 데이터베이스 접속
+# 만약 연결에 성공하면 연결객체가 생성되요!!
+conn = pymysql.connect(host='localhost',
+                       user='data',
+                       password='data',
+                       db='library',
+                       charset='utf8')
+
+keyword = '파이썬'
+sql = "SELECT bisbn, btitle, bauthor, bprice FROM book WHERE btitle LIKE '%{}%'".format(keyword)
+
+try:
+    df = pd.read_sql(sql, con=conn)
+    display(df)
+except Exception as err:    
+    print(err)
+finally:
+    conn.close()
+    
+# column명을 json의 key값으로 이용해서 JSON을 생성
+# with를 사용하면 사용 후 자동으로 close 해준다.
+with open('./data/books_orient_column.json', 'w', encoding='utf-8') as file1:
+    df.to_json(file1, force_ascii=False, orient='columns')
+    
+    
+# 4. JSON파일을 이용해 DataFrame 생성
+df = pd.read_json("books_orient_records.json")
+
+
+# 5. OpenAPI를 이용해 DataFrame 생성
+import json
+import urllib
+
+open_api = 'http://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/searchDailyBoxOfficeList.json' # Open API URL
+query_string = '?key=' #발급 받은 키 값 입력
+open_api_url = open_api + query_string
+
+page_obj = urllib.request.urlopen(open_api_url)
+json_page = json.loads(page_obj.read())
+
+my_dict = dict()
+rank_list = list()
+title_list = list()
+sales_list = list()
+
+for tmp_dict in json_page['boxOfficeResult']['dailyBoxOfficeList']:
+    rank_list.append(tmp_dict['rank'])
+    title_list.append(tmp_dict['movieNm'])
+    sales_list.append(tmp_dict['salesAmt'])
+
+my_dict['순위'] = rank_list  
+my_dict['제목'] = title_list  
+my_dict['매출액'] = sales_list  
+
+df = pd.DataFrame(my_dict)
+```
+
+
+
+## 3. DataFrame Indexing
+
+```python
+import numpy as np
+import pandas as pd
+
+data = { '이름' : ['홍길동','신사임당','강감찬','아이유','김연아'],
+         '학과' : ['컴퓨터', '철학', '수학', '영어영문', '통계'],
+         '학년' : [1, 2, 2, 4, 3],
+         '학점' : [1.3, 3.5, 2.7, 4.3, 4.5]}
+
+df = pd.DataFrame(data,
+                  columns=['학과','이름','학년','학점','등급'],
+                  index=['one','two','three','four','five'])
+
+print(df['이름'])   # Series로 출력
+stu_name = df['이름']    # View가 나와요!!
+stu_name = df['이름'].copy()    # 별도의 Series를 생성
+
+## 원하는 값으로 바꾸고자 할 떄
+# 컬럼 기반 처리
+df['등급'] = 'A'  # broadcasting => '등급'의 모든 행이 'A'로 입력
+df['등급'] = ['A','C','B','A',np.nan] # np.nan => pandas에서 결측치 표현
+df['등급'] = ['A','C','B','A'] # 행의 개수가 맞지 않아 오류
+
+# index 기반 처리
+df['나이'] = pd.Series([15,30,35],
+                    index=['one','three','four']) 
+
+# 연산을 통해서 새로운 column을 추가할 수 있어요!!
+df['장학생여부'] = df['학점'] > 4.0
+
+## DataFrame안에 데이터를 삭제하는 경우
+new_df = df.drop('학년',axis=1,inplace=False)
+# inplac=True => 원본 변경, False => 삭제된 복사본 생성 (defalt : inplace=False)
+# axis=0 => 행 삭제, 1 => 열 삭제 (defalt : axis=0)
+
+# column indexng
+print(df['이름'])   # OK. Series로 결과 리턴
+print(df['이름':'학년'])  # Error. column은 slicing이 안되요!
+display(df[['이름','학년']]) # OK. Fancy indexing은 허용!
+# boolean indexing은 column과는 상관이 없어요. row indexing할때 사용 
+                        
+# Row indexing(숫자 index를 이용해서)
+print(df[0])      # Error 행에 대한 숫자 인덱스로 단일 indexing이 안되요!
+display(df[1:])    # OK slicing은 가능!   => View
+display(df[[1,3]])    # Error Fancy indexing 불가능
+
+# Row indexing(index를 이용해서)
+print(df['two'])    # Error. 행에 대한 index를 이용한 단일 row 추출은 안되요!
+display(df['two':])  # OK! index를 이용한 row slicing 가능
+display(df['two':-1])  # Error! 숫자index와 일반 index를 혼용해서 사용할 수 없어요!
+display(df[['one','three']]) # Error  
+
+    
+## 혼동스럽기 때문에 row indexing은 loc[]을 사용
+# loc[]은 숫자 index를 사용할 수 없고 컬럼명을 이용
+display(df.loc['two']) # OK 단일 row 추출 가능 => Series로 리턴
+display(df.loc['two':'three']) # OK Slicing
+display(df.loc[['two','four']]) # OK Fancy indexing
+
+# 숫자 index를 사용하려면 iloc[]를 이용
+display(df.iloc[1]) # OK 단일 row 추출 가능 => Series로 리턴
+display(df.iloc[1:3])  # OK Slicing
+display(df.iloc[[0,3]])  # OK Fancy indexing
+
+# loc[,]을 통해 행과 열 접근 가능
+display(df.loc['one' : 'three', ['이름','학점']])
+display(df.loc[df['학점'] > 4.0, ['이름','학점']]) # boolean mask
 ```
 
 
