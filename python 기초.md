@@ -429,6 +429,7 @@ print(arr[arr % 2 == 0])  # boolean indexing
 print(np.sum(arr)) # 합계
 print(arr.sum())   # 위와 동일
 print(np.mean(arr)) # 평균
+print(np.var(arr)) # 분산
 print(np.max(arr)) # 최대
 print(np.min(arr)) # 최대
 print(np.argmax(arr)) # 최대값의 index가 리턴 
