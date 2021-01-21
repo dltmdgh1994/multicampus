@@ -441,7 +441,54 @@ result = pd.concat([df1,df2],
 
 
 
-#### 5. 기타 함수
+#### 5. Grouping
+
+```python
+import numpy as np
+import pandas as pd
+
+my_dict = {
+    '학과' : ['컴퓨터','경영학과','컴퓨터','경영학과','컴퓨터'],
+    '학년' : [1, 2, 3, 2, 3],
+    '이름' : ['홍길동','신사임당','김연아','아이유','강감찬'],
+    '학점' : [1.5, 4.4, 3.7, 4.5, 4.2]
+}
+
+df = pd.DataFrame(my_dict)
+
+# 학과를 기준으로 grouping
+score = df['학점'].groupby(df['학과'])
+
+# 그룹안에 데이터를 확인하고 싶은 경우에는 get_group()
+print(score.get_group('경영학과'))
+
+# grouping된 객체에 다양한 함수 적용
+print(score.size())  # Series로 리턴되요!
+print(score.mean())  
+print(score.count())
+
+
+# 학과,학년를 기준으로 grouping
+score = df['학점'].groupby([df['학과'],df['학년']])
+print(score.mean())  # 결과가 Series로 나와요(멀티인덱스)
+display(score.mean().unstack())  # 최하위 index를 column으로 변경
+
+
+# 1. 학과별 평균학점은?
+df.groupby(df['학과'])['학점'].mean()
+# 2. 학과별 몇명이 존재하나요?
+df.groupby(df['학과'])['이름'].count()
+
+for dept, group in df.groupby(df['학과']):
+    print(dept)
+    display(group)
+```
+
+
+
+
+
+#### 6. 기타 함수
 
 ```python
 import numpy as np
@@ -457,6 +504,24 @@ print(df['E'].unique())   # ['AA' 'BB' 'CC']
 print(df['E'].value_counts())  # 각 value값들의 개수를 series로 리턴
 print(df['E'].isin(['AA','BB']))  # 조건을 검색할때 많이 이용하는 방법 중 하나
 								  # True, False를 series로 리턴
+    
+
+new_df = df.dropna(how='any')  
+# how='any' NAN이 하나라도 해당 행에 존재하면 행을 삭제
+# how='all' 모든 컬럼의 값이 NaN인 경우 행을 삭제
+# inplace = False로 default 설정 
+
+new_df = df.fillna(value=0)
+# NaN을 value로 채움
+
+df.isnull()
+# 각 요소가 NaN인지 아닌지를 True, False로 반환
+
+df.drop_duplicates(['k1','k2'])
+# 특정 column을 기준으로 중복 제거
+
+df.replace(5,-100)
+# df 내 특정 값들을 지정한 값으로 변경
 ```
 
 
