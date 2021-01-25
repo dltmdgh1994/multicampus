@@ -708,6 +708,16 @@ d81c176 (HEAD -> master) 작업끝
 57ad4ef Status
 fb4ad8d Add b.txt
 ec0574d Add a.txt
+
+
+// [방법 1] commit을 취소하고 해당 파일들은 staged 상태로 워킹 디렉터리에 보존
+$ git reset --soft HEAD^
+// [방법 2] commit을 취소하고 해당 파일들은 unstaged 상태로 워킹 디렉터리에 보존
+$ git reset --mixed HEAD^ // 기본 옵션
+$ git reset HEAD^ // 위와 동일
+$ git reset HEAD~2 // 마지막 2개의 commit을 취소
+// [방법 3] commit을 취소하고 해당 파일들은 unstaged 상태로 워킹 디렉터리에서 삭제
+$ git reset --hard HEAD^
 ```
 
 ### revert 
@@ -735,3 +745,16 @@ fb4ad8d Add b.txt
 ec0574d Add a.txt
 
 ```
+
+
+
+## 13. clean
+
+Untracked한 파일들을 지운다.
+
+``` bash
+$ git clean -f // 디렉터리를 제외한 파일들만 삭제
+$ git clean -f -d // 디렉터리까지 삭제
+$ git clean -f -d -x // 무시된 파일까지 삭제
+```
+
