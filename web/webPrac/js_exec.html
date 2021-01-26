@@ -9,19 +9,25 @@
             crossorigin="anonymous">
     </script>
     <script src="js/js_exec.js"></script>
+    <style>
+        .myStyle{
+            background-color: yellow;
+            color: darkred;
+        }
+    </style>
 </head>
 <body>
     <h1>여기는 h1입니다.</h1>
     <ul>
         <li>서울</li>
-        <li>인천</li>
+        <li>인천</li>2
         <li>부산</li>
     </ul>
     <span>여기는 span영역입니다.</span>
     <img src = "img/바다.jpg">
     <br><br>
     <input type="button" value="클릭"
-           onclick="fuc()">
+           onclick="func1()">
     <br><br>
     <div>
         <ul>
@@ -38,5 +44,10 @@
             <li class = "myList">강아지</li>
         </ol>
     </div>
+
+    <br><br>
+    <h1 onclick="func4()">여기도 h1입니다.</h1>
+    <h1 onmouseover="func2()"
+        onmouseleave="func3()">야나두</h1>
 </body>
 </html>

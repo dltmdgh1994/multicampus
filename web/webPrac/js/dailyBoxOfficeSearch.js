@@ -1,7 +1,7 @@
 
 function load_data(){
     let user_date = $('#userInputDate').val();
-    let user_key = '7722ddf37f0243d6b83affbdab6c38ce';
+    let user_key = '{REST API키}';
     let open_api = 'http://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/searchDailyBoxOfficeList.json'
 
     // refresh가 일어나서 화면을 갱신함
@@ -13,17 +13,82 @@ function load_data(){
         url : open_api, // 호출할 서버쪽 프로그램의 URL
         type : 'GET',   // 서버쪽 프로그램에 대한 request 방식
         dataType : 'json',  // 결과의 datatype
-        data : {  // 서버에 보내줘야할 데이터
+        data : {   // 서버에 보내줘야할 데이터
             key : user_key,
             targetDt : user_date
         },
-        success : function (){ // 성공 시 호출
-            alert("호출 성공!");
+        success : function (result){ // 성공 시 호출
+            $('#my_tbody').empty()
+            // alert("호출 성공!");
+            let movie_list = result['boxOfficeResult']['dailyBoxOfficeList']
+            for(let i = 0; i < movie_list.length; i++){
+                let m_name = movie_list[i].movieNm
+                let m_rank = movie_list[i].rank
+                let m_sales = movie_list[i].salesAcc
+                let m_audiAcc = movie_list[i].audiAcc
+
+                // 데이터 생성 후 HTML element를 생성
+                let tr = $('<tr></tr>')
+                let name_td = $('<td></td>').text(m_name)
+                let rank_td = $('<td></td>').text(m_rank)
+                let sales_td = $('<td></td>').text(m_sales)
+                let audiAcc_td = $('<td></td>').text(m_audiAcc)
+                // 포스터 이미지를 추가하기 위해 id에 인덱스 부여
+                var img_id = "poster_img" + i.toString()
+                let img_td = $('<td></td>').attr('id',img_id)
+
+                let poster_td = $('<td></td>')
+                let poster_btn = $('<Input/>').attr('type','button')
+                    .attr('value','포스터 보기')
+
+                poster_btn.on('click', function () {
+                    $.ajax({
+                        url: 'https://dapi.kakao.com/v2/search/image', // 호출할 서버쪽 프로그램의 URL
+                        type: 'GET',   // 서버쪽 프로그램에 대한 request 방식
+                        dataType: 'json',  // 결과의 datatype
+                        data : {
+                            query : m_name
+                        },
+                        headers : {
+                            Authorization : 'KakaoAK {REST API키}'
+                        },
+                        success : function (r){
+                            //alert("호출 성공!");
+                            let url = r['documents'][0]['image_url']
+                            let p = $('<img></img>').attr('src',url)
+                            var poster_img_id = '#poster_img'+i.toString()
+                            $(poster_img_id).append(p)
+                        },
+                        error : function (){
+                            alert("호출 실패!");
+                        }
+                    })
+                })
+
+                poster_td.append(poster_btn)
+
+                let delete_td = $('<td></td>')
+                let delete_btn = $('<Input/>').attr('type','button')
+                    .attr('value','삭제')
+
+                delete_btn.on('click', function() {
+                    $(this).parent().parent().remove()
+                })
+
+                delete_td.append(delete_btn)
+                tr.append(name_td)
+                tr.append(rank_td)
+                tr.append(sales_td)
+                tr.append(audiAcc_td)
+                tr.append(img_td)
+                tr.append(poster_td)
+                tr.append(delete_td)
+
+                $('#my_tbody').append(tr)
+            }
         },
         error : function (){ // 실패 시 호출
             alert("호출 실패!");
         }
     });
-
-
 }
