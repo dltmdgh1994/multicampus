@@ -1,7 +1,7 @@
 
 function load_data(){
     let user_date = $('#userInputDate').val();
-    let user_key = '{REST API키}';
+    let user_key = '{영화진흥원 REST_KEY}';
     let open_api = 'http://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/searchDailyBoxOfficeList.json'
 
     // refresh가 일어나서 화면을 갱신함
@@ -33,15 +33,19 @@ function load_data(){
                 let rank_td = $('<td></td>').text(m_rank)
                 let sales_td = $('<td></td>').text(m_sales)
                 let audiAcc_td = $('<td></td>').text(m_audiAcc)
-                // 포스터 이미지를 추가하기 위해 id에 인덱스 부여
-                var img_id = "poster_img" + i.toString()
-                let img_td = $('<td></td>').attr('id',img_id)
+                // 1. 인덱스를 통해 별개의 id 부여
+                //var img_id = "poster_img" + i.toString()
+                //let img_td = $('<td></td>').attr('id',img_id)
+                
+                // 2. 통합된 id 부여
+                let img_td = $('<td></td>').attr('id','img_id')
 
                 let poster_td = $('<td></td>')
                 let poster_btn = $('<Input/>').attr('type','button')
                     .attr('value','포스터 보기')
 
                 poster_btn.on('click', function () {
+                    let p = $('<img></img>')
                     $.ajax({
                         url: 'https://dapi.kakao.com/v2/search/image', // 호출할 서버쪽 프로그램의 URL
                         type: 'GET',   // 서버쪽 프로그램에 대한 request 방식
@@ -50,19 +54,22 @@ function load_data(){
                             query : m_name
                         },
                         headers : {
-                            Authorization : 'KakaoAK {REST API키}'
+                            Authorization : 'KakaoAK {카카오 REST_KEY}'
                         },
                         success : function (r){
                             //alert("호출 성공!");
                             let url = r['documents'][0]['image_url']
-                            let p = $('<img></img>').attr('src',url)
-                            var poster_img_id = '#poster_img'+i.toString()
-                            $(poster_img_id).append(p)
+                            p.attr('src',url)
+                            // 1. 별개의 id를 통해 접근
+                            //var poster_img_id = '#poster_img'+i.toString()
+                            //$(poster_img_id).append(p)
                         },
                         error : function (){
                             alert("호출 실패!");
                         }
                     })
+                    // 2. 통합된 id를 통해 접근
+                    $(this).parent().parent().children('#img_id').append(p)
                 })
 
                 poster_td.append(poster_btn)
