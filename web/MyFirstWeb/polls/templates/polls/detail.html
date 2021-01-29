@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>{{ selected_question.question_text }}</h1>
+
+    <!-- 에러가 발생한 경우 호출 -->
+    {% if error_message %}
+    <div>{{ error_message }}</div>
+    {% endif %}
+
+    <!-- url : http://localhost:8000/polls/{ selected_question }}/vote/ 와 동일-->
+    <form action="{% url 'polls:vote' selected_question.id %}" method="POST">
+        <!-- form 사용 시 보안을 위해 사용, 안 쓰면 에러! -->
+        {% csrf_token %}
+        {% for choice in selected_question.choice_set.all %}
+        <input type="radio" name="my_choice"
+               id="btn{{ forloop.counter }}" value="{{ choice.id }}">
+        <label for="btn{{ forloop.counter }}">{{ choice.choice_text }}</label><br>
+        {% endfor %}
+        <br>
+        <input type="submit" name="제출">
+    </form>
+</body>
+</html>
