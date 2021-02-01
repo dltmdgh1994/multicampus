@@ -6,7 +6,8 @@ django-admain startproject mysite
 
 # polls라는 애플리케이션 생성(투표기능)
 # manage.py가 있는 곳으로 cd한 후
-python manage.py startapp polls
+python manage.py startapp polls # 투표
+python manage.py startapp bbs # 게시판
 ```
 
 
@@ -23,6 +24,14 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # 4. 타임존 지정
 TIME_ZONE = 'Asia/Seoul'
+
+# 5. templetes 파일 생성 후 DIRS에 등록
+'DIRS': [os.path.join(BASE_DIR, 'templates')]
+
+# 6. CSS와 같이 static 파일이 있는 경우 STATICFILES_DIRS 등록
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]
 ```
 
 
@@ -134,7 +143,7 @@ python manage.py createsuperuser
    ```
    
 
-   * mysite/polls/urls.py
+   * polls/urls.py
 
    ```python
    from django.urls import path, include
@@ -305,3 +314,8 @@ python manage.py createsuperuser
 
    ![results_html](md-images/results_html.PNG)
 
+
+
+# 5. 데이터 추가
+
+서버 가동 후 admin 페이지에서 직접 추가 가능
