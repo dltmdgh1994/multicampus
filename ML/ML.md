@@ -32,9 +32,13 @@ Explicit program(Rule based based programming)으로 해결할 수 없는 문제
 
   1. Regression
 
+     훈련 데이터 셋을 이용해 학습하고 나온 predict model이 연속적인 값을 예측(얼마나??)
+
      ![regression](md-images/regression.PNG)
 
   2. Binary Classification
+
+     predict model이 어떤 부류에 속하는지를 예측(어떤 것??)
 
      ![binary_classification](md-images/binary_classification.PNG)
 
@@ -157,10 +161,84 @@ Regression Model(회귀 모델)은 어떠한 데이터에 대해서 그 값에 �
   우리가 해결해야 하는 현실은 너무 복잡 => 단순화. 따라서, 가정이 필요
 
   * 오차항은 정규분포를 따른다.
+
   * 독립변수와 종속변수가 선형관계
+
   * 데이터에 이상치가 없다.
+
   * 독립변수와 오차항은 독립 등등
+
+    
 
 * Classical Linear Regression Model
 
   ![classical_linear_regression_model](md-images/classical_linear_regression_model.PNG)
+
+  * MSE
+
+    ![MSE](md-images/MSE.PNG)
+
+    
+
+  * 손실 함수(Loss Function) = 비용 함수(Cost Function)
+
+    훈련 데이터 셋의 정답 t와 입력 x에 대한 y(모델의 예측값)의 차이를 모두 더해 수식으로 나타낸 식 => MSE를 이용
+
+    최소제곱법을 이용해서 loss function을 만들고 그 값이 최소가 되게 하는 w와 b를 학습 과정을 통해 찾는다.
+
+    ![loss_function](md-images/loss_function.PNG)
+
+    
+
+  * 경사하강법(Gradient Descent Algorithm)
+
+    loss function의 값이 최소가 되게 하는 w를 찾기 위한 방법으로,  loss function의 미분값이 0이 되는 w를 찾기 위해 w를 조금씩 줄여가면서 찾는다.
+
+    ![gradient_descent_algorithm](md-images/gradient_descent_algorithm.PNG)
+
+    여기서, epoch와 learning late를 통해 접근을 조절
+
+    
+
+  ```python
+  # 1. Training Data Set 준비 : ndarray를 이용해서 데이터셋을 사용할꺼예요!
+  # 2. Linear Regression Model을 정의 : 
+  #    - Weight와 bias를 정의하고 이를 이용해서 Hypothesis(Model)을 정의해요!
+  # 3. Loss function 정의 : 손실함수(Loss function)을 코드로 표현
+  # 4. learning rate를 정의 : 일반적으로 customizing해야 하는 값으로
+  #                           1e-3정도로 설정해서 사용.
+  # 5. 학습을 진행 : 반복적으로 편미분을 이용해서 W와 b의 값을 update처리
+  
+  
+  # Tensorflow를 이용해서 배운 이론을 실제로 구현해 보아요!
+  # Tensorflow는 Google이 만든 Deep Library
+  # Tensorflow는 1.x버전과 2.x버전으로 나뉘어져요!
+  # 2019년 10월 Tensorflow 2.x버전이 정식으로 release
+  # 1.x버전은 low level의 코딩이 필요!
+  # 2.x버전은 상위 API(Keras)가 기본으로 포함. => 구현이 쉬워요!
+  # 사용하기 위해서 라이브러리부터 설치를 해야 하겠죠!!
+  
+  import tensorflow as tf
+  print(tf.__version__) # 1.15.0
+  
+  node1 = tf.constant('Hello World')
+  
+  # 그래프를 실행하려면 1.x버전에서는 session이 필요
+  # 1.x버전에서만 사용되요. 2.x버전에서는 삭제
+  # session은 그래프안의 특정 노드를 실행시킬 수 있어요!
+  sess = tf.Session()
+  
+  print(sess.run(node1).decode()) # Hello World
+  
+  print(node1)  # Tensor("Const:0", shape=(), dtype=string)
+  
+  node1 = tf.constant(10, dtype=tf.float32)
+  node2 = tf.constant(30, dtype=tf.float32)
+  
+  node3 = node1 + node2
+  
+  print(sess.run([node3, node1])) # [40.0, 10.0]
+  ```
+
+  
+
