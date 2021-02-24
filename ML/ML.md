@@ -200,23 +200,12 @@ Regression Model(회귀 모델)은 어떠한 데이터에 대해서 그 값에 �
 
     
 
+  1. Tensorflow를 이용해서 Simple Linear Regression을 구현
+
   ```python
-  # 1. Training Data Set 준비 : ndarray를 이용해서 데이터셋을 사용할꺼예요!
-  # 2. Linear Regression Model을 정의 : 
-  #    - Weight와 bias를 정의하고 이를 이용해서 Hypothesis(Model)을 정의해요!
-  # 3. Loss function 정의 : 손실함수(Loss function)을 코드로 표현
-  # 4. learning rate를 정의 : 일반적으로 customizing해야 하는 값으로
-  #                           1e-3정도로 설정해서 사용.
-  # 5. 학습을 진행 : 반복적으로 편미분을 이용해서 W와 b의 값을 update처리
-  
-  
-  # Tensorflow를 이용해서 배운 이론을 실제로 구현해 보아요!
-  # Tensorflow는 Google이 만든 Deep Library
   # Tensorflow는 1.x버전과 2.x버전으로 나뉘어져요!
-  # 2019년 10월 Tensorflow 2.x버전이 정식으로 release
   # 1.x버전은 low level의 코딩이 필요!
   # 2.x버전은 상위 API(Keras)가 기본으로 포함. => 구현이 쉬워요!
-  # 사용하기 위해서 라이브러리부터 설치를 해야 하겠죠!!
   
   import tensorflow as tf
   print(tf.__version__) # 1.15.0
@@ -240,5 +229,165 @@ Regression Model(회귀 모델)은 어떠한 데이터에 대해서 그 값에 �
   print(sess.run([node3, node1])) # [40.0, 10.0]
   ```
 
+  ![model_graph1](md-images/model_graph1.PNG)
+
+  ```python
+    import numpy as np
+    import pandas as pd
+    import tensorflow as tf
+    
+    # 1. training data set
+    x_data = (np.array([1,2,3,4,5])).reshape(5,1)   # 공부시간 
+    t_data = (np.array([3,5,7,9,11])).reshape(5,1)  # 시험성적
+      
+    # 2. placeholder => 데이터는 아직. 모형만
+    X = tf.placeholder(shape=[None,1], dtype=tf.float32)
+    T = tf.placeholder(shape=[None,1], dtype=tf.float32)
+    
+    # 3. Weight & bias   
+    W = tf.Variable(tf.random.normal([1,1]), name='weight')
+    b = tf.Variable(tf.random.normal([1]), name='bias')
+    
+    # 4. Hypothesis or predict model
+    H = tf.matmul(X,W) + b   # y = Wx + b => 2차원행렬로 처리 
+      					   # => y = X dot W + b
+    
+    # 5. W,b를 구하기 위해 평균제곱오차를 이용한 최소제곱법을 통해
+    #    loss function을 정의
+    loss = tf.reduce_mean(tf.square(H - T))
+    
+    # 6. train
+    train = tf.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(loss)
+    
+    # 7. session & 초기화
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())   # 초기화 (2.x 넘어오면서 삭제)
+    
+    # 8. 학습을 진행
+    # 반복학습을 진행 ( 1 epoch : training data set 전체를 이용하여 1번 학습)
+    for step in range(30000):
+        
+        _, W_val, b_val, loss_val = sess.run([train,W,b,loss], 
+                                             feed_dict={X : x_data, T : t_data})
+        
+        if step % 3000 == 0:
+            print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
+            
+    # 9. 학습이 종료된 후 최적의 W와 b가 계산되고 이를 이용한 model이 완성
+    #    prediction(예측)
+    result = sess.run(H, feed_dict={X : [[9]]})
+    print('예측값은 : {}'.format(result)) # 예측값은 : [[18.999674]]
+  ```
+
   
 
+  2. python를 이용해서 Simple Linear Regression을 구현
+
+  ``` python
+  import numpy as np
+  
+  # 1. training data set
+  x_data = np.array([1,2,3,4,5]).reshape(5,1)
+  t_data = np.array([3,5,7,9,11]).reshape(5,1)
+  
+  # 2. Weight & bias
+  W = np.random.rand(1,1)   
+  b = np.random.rand(1)
+  
+  # 3. Hypothesis
+  def predict(x):
+      
+      y = np.dot(x,W) + b   
+      
+      return y
+  
+  # 4. loss_function
+  def loss_func(input_obj):
+      # input_obj : [W, b]
+      
+      input_W = input_obj[0]
+      input_b = input_obj[1]
+      
+      y = np.dot(x_data,input_W) + input_b
+      
+      return np.mean(np.power((t_data - y),2))
+  
+  # 5. 편미분을 위한 함수
+  def numerical_derivative(f,x):
+      
+      # f : 미분하려고 하는 다변수 함수
+      # x : 모든 값을 포함하는 numpy array  ex) f'(1.0, 2.0) = (8.0, 15.0)
+      #     [W, b] 
+      delta_x = 1e-4
+      derivative_x = np.zeros_like(x)    # [0 0]
+      
+      it = np.nditer(x, flags=['multi_index'])
+      
+      while not it.finished:
+          
+          idx = it.multi_index   # 현재의 iterator의 index를 추출 => tuple형태로 나와요     
+          
+          tmp = x[idx]     # 현재 index의 값을 잠시 보존.
+                           # delta_x를 이용한 값으로 ndarray를 수정한 후 편미분을 계산
+                           # 함수값을 계산한 후 원상복구를 해 줘야 다음 독립변수에
+                           # 대한 편미분을 정상적으로 수행할 수 있어요!  
+          x[idx] = tmp + delta_x        
+          fx_plus_delta = f(x)    # f([1.00001, 2.0])   => f(x + delta_x)
+          
+  
+          x[idx] = tmp - delta_x
+          fx_minus_delta = f(x)    # f([0.99999, 2.0])   => f(x - delta_x)
+          
+          derivative_x[idx] = (fx_plus_delta - fx_minus_delta) / (2 * delta_x)
+          
+          x[idx] = tmp
+          
+          it.iternext()
+          
+      return derivative_x
+  
+  
+  # 6. 학습을 진행
+  learning_rate = 1e-4
+  
+  for step in range(300000):
+      input_param = np.concatenate((W.ravel(), b.ravel()), axis=0)  # [W b]
+      derivative_result = learning_rate * numerical_derivative(loss_func,input_param)
+      
+      W = W - derivative_result[:1].reshape(1,1)  # W 갱신
+      b = b - derivative_result[1:]               # b 갱신
+  
+      if step % 30000 == 0:
+          print('W : {}, b : {}'.format(W,b))
+          
+  # 7. prediction
+  result = predict([[9]])
+  print(result) # [[19.00000502]]
+  ```
+
+  
+
+  3. sklearn을 이용해서 Simple Linear Regression을 구현
+
+  ```python
+  import numpy as np
+  from sklearn import linear_model
+  
+  # 1. training data set
+  x_data = np.array([1,2,3,4,5]).reshape(-1,1)
+  t_data = np.array([3,5,7,9,11]).reshape(-1,1)
+  
+  # 2. linear regression model 생성
+  model = linear_model.LinearRegression()
+  
+  # 3. 학습진행
+  model.fit(x_data, t_data)
+  
+  # 4. Weight, bias 확인
+  print('W : {}, b : {}'.format(model.coef_, model.intercept_))
+  
+  # 5. predict
+  print(model.predict([[9]])) # [[19.]]
+  ```
+
+  
