@@ -150,7 +150,112 @@ Explicit program(Rule based based programming)으로 해결할 수 없는 문제
   print('미분한 결과는 : {}'.format(result)) # [8, 15.0000001]
   ```
 
-  
+
+
+
+## 데이터 전처리
+
+머신러닝에서 학습이 잘 되기 위해서는 **양질의 데이터**가 필요 => **데이터 전처리**
+
+1. **이상치 처리**
+
+   이상치(outlier) : 관측된 값이 일반적인 값에 비해 편차가 큰 값을 지칭
+
+   독립변수(feature)에 있는 이상치 => 지대점
+
+   종속변수(label)에 있는 이상치 => 이상치
+
+   이상치 검출 & 처리 방법
+
+   1. Tukey Fences
+
+      Box plot의 사분위를 이용해서 이상치를 graph에서 확인
+
+      ![boxplot](md-images/boxplot.PNG)
+
+      IQR value : 3사분위값 - 1사분위값
+
+      이상치 : 1사분위값 - (IQR Value * 1.5) 미만의 값들
+
+      ​			   3사분위값 + (IQR Value * 1.5) 초과의 값들
+
+      ​			  이 경계들을 Tukey Fences라 부른다.
+
+      ```python
+      import numpy as np
+      import matplotlib.pyplot as plt
+      
+      data = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,22.1])
+      
+      fig = plt.figure()   # 새로운 figure를 생성
+      fig_1 = fig.add_subplot(1,2,1)
+      fig_2 = fig.add_subplot(1,2,2)
+      
+      fig_1.set_title('Original Data')
+      fig_1.boxplot(data)
+      
+      # numpy를 이용해서 사분위수를 구해보아요! percentile()
+      print(np.median(data))         # 중위값(2사분위) => 8.0
+      print(np.percentile(data,25))  # 1사분위 => 4.5
+      print(np.percentile(data,50))  # 2사분위 => 8.0
+      print(np.percentile(data,75))  # 3사분위 => 11.5
+      
+      # IQR value
+      iqr_value = np.percentile(data,75) - np.percentile(data,25)
+      print(iqr_value)  # 7.0
+      
+      upper_fense = np.percentile(data,75) + (iqr_value * 1.5)
+      lower_fense = np.percentile(data,25) - (iqr_value * 1.5)
+      
+      print(upper_fense)  # 22.0
+      print(lower_fense)  # -6.0
+      
+      ## 이상치를 출력해보아요!!
+      print(data[(data > upper_fense) | (data < lower_fense)])  # [22.1]
+      
+      result = data[(data <= upper_fense) & (data >= lower_fense)]
+      
+      fig_2.set_title('Remove Outlier')
+      fig_2.boxplot(result)
+      
+      fig.tight_layout()
+      plt.show()
+      ```
+
+      ![boxplot_result](md-images/boxplot_result.PNG)
+
+      
+
+      
+
+   2. Z-score
+
+      정규분포와 표준편차를 이용해서 이상치를 확인
+
+      ![normal_distribution](md-images/normal_distribution.PNG)
+
+      ```python
+      import numpy as np
+      from scipy import stats
+      
+      zscore_threshold = 1.8 # (2.0이 optimal value) => 상위 95% 이상, 하위 95% 이하인 값
+      
+      data = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,22.1])
+      
+      # outlier 출력
+      outlier = data[np.abs(stats.zscore(data)) > zscore_threshold]
+      
+      # 이상치를 제거한 데이터
+      data[np.isin(data,outlier, invert=True)]
+      ```
+
+      
+
+2. **정규화(Normalization)**
+
+
+
+
 
 ## Regression
 
