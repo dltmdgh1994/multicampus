@@ -439,7 +439,7 @@ Regression Model(회귀 모델)은 어떠한 데이터에 대해서 그 값에 �
   scaler_x = MinMaxScaler()  # 객체 생성
   scaler_t = MinMaxScaler()  # 객체 생성
   
-scaler_x.fit(x_data)
+  scaler_x.fit(x_data)
   scaler_t.fit(t_data)
 
   scaled_x_data = scaler_x.transform(x_data)
@@ -691,7 +691,185 @@ print('W : {}, b : {}'.format(model.coef_, model.intercept_))
 
   
 
+## Classification
 
+Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데이터에 대해서 결과가 어떤 종류의 값으로 분류될 수 있는지 예측하는 작업
+
+![classification](md-images/classification.PNG)
+
+* Logistic Regression
+
+  ![logistic_regression](md-images/logistic_regression.PNG)
+
+  Linear Regression의 출력(model) wx+b가 어떠한 값을 가지더라도 출력함수로 sigmoid 함수를 이용하면 0~1 사이의 실수값이 도출
+
+  이 때, loss function으로 기존 값(wx+b)에 sigmoid를 취한 형태는 convex 형태가 아닐수도 있어 local minimum을 도출할 가능성이 있다 => Cross Entropy Loss라는 loss function 이용
+
+  
+
+  1. python를 이용해서 Logistic Regression을 구현
+
+     ```python
+     import numpy as np
+     
+     # Training Data Set
+     x_data = np.arange(2,21,2).reshape(-1,1) # 공부시간(독립변수)
+     t_data = np.array([0,0,0,0,0,0,1,1,1,1]).reshape(-1,1) 
+                                              # 합격여부(14시간부터 1)
+                                              # 13시간 공부하면 ??
+     
+     # 수치미분함수(for python)
+     def numerical_derivative(f,x):
+         
+         # f : 미분하려고 하는 다변수 함수(loss 함수)
+         # x : 모든 값을 포함하는 numpy array => [W, b] 
+         delta_x = 1e-4
+         derivative_x = np.zeros_like(x)    # [0 0]
+         
+         it = np.nditer(x, flags=['multi_index'])
+         
+         while not it.finished:
+             
+             idx = it.multi_index   # 현재의 iterator의 index를 추출 => tuple형태로 나와요
+             
+             tmp = x[idx]     # 현재 index의 값을 잠시 보존.
+                              # delta_x를 이용한 값으로 ndarray를 수정한 후 편미분을 계산
+                              # 함수값을 계산한 후 원상복구를 해 줘야 다음 독립변수에
+                              # 대한 편미분을 정상적으로 수행할 수 있어요!
+             x[idx] = tmp + delta_x        
+             fx_plus_delta = f(x)    # f([1.00001, 2.0])   => f(x + delta_x)
+             
+     
+             x[idx] = tmp - delta_x
+             fx_minus_delta = f(x)    # f([0.99999, 2.0])   => f(x - delta_x)
+             
+             derivative_x[idx] = (fx_plus_delta - fx_minus_delta) / (2 * delta_x)
+             
+             x[idx] = tmp
+             
+             it.iternext()
+             
+         return derivative_x
+     
+     
+     # Weight & bias
+     W = np.random.rand(1,1)  # 행렬곱 연산을 위해 matrix형태로 생성
+     b = np.random.rand(1)
+     
+     # loss function
+     def loss_func(input_obj): # W와 b가 입력으로 들어가야 해요!  
+                               # [W, b]  
+         
+         input_W = input_obj[0].reshape(-1,1)
+         input_b = input_obj[1]
+         
+         # linear regression의 hypothesis
+         z = np.dot(x_data,input_W) + input_b  # Wx + b
+         # logistic regression의 hypothesis
+         y = 1 / (1 + np.exp(-1 * z)) 
+         
+         delta = 1e-7  # log연산시 무한대로 발산하는것을 방지하기 위한 수치처리방식
+         
+         # coss entropy
+         return -np.sum(t_data*np.log(y+delta) + (1-t_data)*np.log(1-y+delta))
+     
+     
+     # learning rate
+     learning_rate = 1e-4
+     
+     
+     # 학습(Gradient Descent Algorithm을 수행)
+     for step in range(300000):
+         input_param = np.concatenate((W.ravel(), b.ravel()), axis=0)  # [W b]
+         derivative_result = learning_rate * numerical_derivative(loss_func,input_param)
+         
+         W = W - derivative_result[0].reshape(-1,1)
+         b = b - derivative_result[1]
+         
+         if step % 30000 == 0:
+             input_param = np.concatenate((W.ravel(), b.ravel()), axis=0)  # [W b]
+             print('W : {}, b : {}, loss : {}'.format(W.ravel(),b,loss_func(input_param)))
+      
+     
+     def logistic_predict(x):    # [[13]]  => 13시간 공부하면??
+         
+         z = np.dot(x,W) + b
+         y = 1 / (1 + np.exp(-1 * z))
+         
+         if y < 0.5:
+             result = 0
+         else:
+             result = 1
+             
+         return result, y   # result는 결과값, y는 확률값    
+     
+     study_hour = np.array([[13]])
+     print(logistic_predict(study_hour))    # 결과 : 1(합격) , 확률 : 0.54446533
+     ```
+
+     
+
+  2. tensorflow를 이용해서 Logistic Regression을 구현
+
+     ```python
+     import tensorflow as tf
+     
+     # placeholder
+     X = tf.placeholder(dtype=tf.float32)
+     T = tf.placeholder(dtype=tf.float32)
+     
+     # Weight & bias
+     W = tf.Variable(tf.random.normal([1,1]), name='weight')
+     b = tf.Variable(tf.random.normal([1]), name='bias')
+     
+     # Hypothesis
+     logit = W * X + b   # Wx + b
+     H = tf.sigmoid(logit)
+     
+     # loss function(Cross Entropy)
+     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logit, labels=T))
+     
+     # train
+     train = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(loss)
+     
+     
+     # session, 초기화
+     sess = tf.Session()
+     sess.run(tf.global_variables_initializer())
+     
+     # 학습
+     for step in range(300000):
+         _, W_val, b_val, loss_val = sess.run([train, W, b, loss],
+                                             feed_dict={X: x_data,
+                                                        T: t_data})
+         if step % 30000 == 0:
+             print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
+             
+             
+     study_hour = np.array([[13]])        
+     result = sess.run(H, feed_dict={X: study_hour})   
+     print(result) # [0.58021265]
+     ```
+
+     
+
+  3. sklearn를 이용해서 Logistic Regression을 구현
+
+     ```python
+     from sklearn import linear_model
+     
+     model = linear_model.LogisticRegression()
+     
+     model.fit(x_data,t_data.ravel())
+     
+     study_hour = np.array([[13]])
+     print(model.predict(study_hour)) # [0]    
+     
+     result_pro = model.predict_proba(study_hour)
+     print(result_pro)    # [[0.50009391 0.49990609]] 아주 근소하게 불합격!!
+     ```
+
+     
 
 
 
