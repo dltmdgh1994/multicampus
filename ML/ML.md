@@ -361,7 +361,7 @@ print(sess.run([node3, node1])) # [40.0, 10.0]
 
       ![z-score_normalization](md-images/z-score_normalization.PNG)
 
-      
+
 
 ## Regression
 
@@ -707,24 +707,63 @@ Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데�
 
   
 
-  1. python를 이용해서 Logistic Regression을 구현
+  1. 데이터 전처리
 
      ```python
      import numpy as np
+     import pandas as pd
+     import matplotlib.pyplot as plt
+     import tensorflow as tf
+     from sklearn import linear_model
+     from sklearn.preprocessing import MinMaxScaler
+     from scipy import stats
      
-     # Training Data Set
-     x_data = np.arange(2,21,2).reshape(-1,1) # 공부시간(독립변수)
-     t_data = np.array([0,0,0,0,0,0,1,1,1,1]).reshape(-1,1) 
-                                              # 합격여부(14시간부터 1)
-                                              # 13시간 공부하면 ??
+     # 1. csv 파일 로딩
+     df = pd.read_csv('./admission.csv')
+     train_data = df[['gre','gpa','rank','admit']]
+     
+     # 2. 결측치 제거
+     train_data = train_data.dropna(how='any')
+     
+     # 3. 이상치 제거
+     zscore_threshold = 2.0
+     
+     for col in train_data.columns:
+         tmp = ~(np.abs(stats.zscore(train_data[col])) > zscore_threshold)
+         train_data = train_data.loc[tmp]
+     
+     x_data = train_data[['gre','gpa','rank']].values
+     t_data = train_data['admit'].values.reshape(-1,1)
+     
+     # 4. 정규화 처리
+     # t는 이미 0,1의 값이므로 정규화가 필요 없다.
+     scaler_x = MinMaxScaler()
+     
+     scaler_x.fit(train_data[['gre','gpa','rank']].values)
+     
+     scaled_x_data = scaler_x.transform(train_data[['gre','gpa','rank']].values)
+     
+     # 예측 값
+     predict_data = np.array([[600.0, 3.8, 1.0]])
+     scaled_predict_data = scaler_x.transform(predict_data)
+     ```
+     
+     
+     
+  2. python를 이용해서 Logistic Regression을 구현
+
+     ```python
+     # python 구현
+     
+     # Weight & bias
+     W = np.random.rand(3,1)  # 행렬곱 연산을 위해 matrix형태로 생성
+     b = np.random.rand(1)
      
      # 수치미분함수(for python)
      def numerical_derivative(f,x):
-         
-         # f : 미분하려고 하는 다변수 함수(loss 함수)
-         # x : 모든 값을 포함하는 numpy array => [W, b] 
+     
          delta_x = 1e-4
-         derivative_x = np.zeros_like(x)    # [0 0]
+         derivative_x = np.zeros_like(x)    
          
          it = np.nditer(x, flags=['multi_index'])
          
@@ -732,10 +771,7 @@ Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데�
              
              idx = it.multi_index   # 현재의 iterator의 index를 추출 => tuple형태로 나와요
              
-             tmp = x[idx]     # 현재 index의 값을 잠시 보존.
-                              # delta_x를 이용한 값으로 ndarray를 수정한 후 편미분을 계산
-                              # 함수값을 계산한 후 원상복구를 해 줘야 다음 독립변수에
-                              # 대한 편미분을 정상적으로 수행할 수 있어요!
+             tmp = x[idx]     
              x[idx] = tmp + delta_x        
              fx_plus_delta = f(x)    # f([1.00001, 2.0])   => f(x + delta_x)
              
@@ -751,20 +787,14 @@ Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데�
              
          return derivative_x
      
-     
-     # Weight & bias
-     W = np.random.rand(1,1)  # 행렬곱 연산을 위해 matrix형태로 생성
-     b = np.random.rand(1)
-     
      # loss function
-     def loss_func(input_obj): # W와 b가 입력으로 들어가야 해요!  
-                               # [W, b]  
+     def loss_func(input_obj): # input_obj [w1 w2 w3 b]
          
-         input_W = input_obj[0].reshape(-1,1)
-         input_b = input_obj[1]
+         input_W = input_obj[:-1].reshape(-1, 1) # w3까지 3행 1열로
+         input_b = input_obj[-1:]
          
          # linear regression의 hypothesis
-         z = np.dot(x_data,input_W) + input_b  # Wx + b
+         z = np.dot(scaled_x_data,input_W) + input_b  # Wx + b
          # logistic regression의 hypothesis
          y = 1 / (1 + np.exp(-1 * z)) 
          
@@ -773,24 +803,22 @@ Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데�
          # coss entropy
          return -np.sum(t_data*np.log(y+delta) + (1-t_data)*np.log(1-y+delta))
      
-     
      # learning rate
      learning_rate = 1e-4
      
-     
      # 학습(Gradient Descent Algorithm을 수행)
-     for step in range(300000):
-         input_param = np.concatenate((W.ravel(), b.ravel()), axis=0)  # [W b]
+     for step in range(100000):
+         input_param = np.concatenate((W.ravel(), b.ravel()), axis=0)  # [w1 w2 w3 b]
          derivative_result = learning_rate * numerical_derivative(loss_func,input_param)
          
-         W = W - derivative_result[0].reshape(-1,1)
-         b = b - derivative_result[1]
+         W = W - derivative_result[:-1].reshape(-1,1)
+         b = b - derivative_result[-1:]
          
-         if step % 30000 == 0:
+         if step % 10000 == 0:
              input_param = np.concatenate((W.ravel(), b.ravel()), axis=0)  # [W b]
              print('W : {}, b : {}, loss : {}'.format(W.ravel(),b,loss_func(input_param)))
-      
-     
+             
+     # predict
      def logistic_predict(x):    # [[13]]  => 13시간 공부하면??
          
          z = np.dot(x,W) + b
@@ -803,75 +831,83 @@ Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데�
              
          return result, y   # result는 결과값, y는 확률값    
      
-     study_hour = np.array([[13]])
-     print(logistic_predict(study_hour))    # 결과 : 1(합격) , 확률 : 0.54446533
+     print("python 예측 결과 : {}".format(logistic_predict(scaled_predict_data)))
+     # python 예측 결과 : (1, array([[0.57333869]]))
      ```
 
      
 
-  2. tensorflow를 이용해서 Logistic Regression을 구현
+  3. tensorflow를 이용해서 Logistic Regression을 구현
 
      ```python
-     import tensorflow as tf
+     # 1. tensorflow
      
-     # placeholder
-     X = tf.placeholder(dtype=tf.float32)
-     T = tf.placeholder(dtype=tf.float32)
+     X = tf.placeholder(shape=[None,3], dtype=tf.float32)
+     T = tf.placeholder(shape=[None,1], dtype=tf.float32)
      
-     # Weight & bias
-     W = tf.Variable(tf.random.normal([1,1]), name='weight')
+     W = tf.Variable(tf.random.normal([3,1]), name='weight')
      b = tf.Variable(tf.random.normal([1]), name='bias')
      
-     # Hypothesis
-     logit = W * X + b   # Wx + b
+     logit = tf.matmul(X,W) + b
      H = tf.sigmoid(logit)
      
      # loss function(Cross Entropy)
-     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logit, labels=T))
+  loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logit, 
+                                                                   labels=T))
      
-     # train
      train = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(loss)
      
-     
-     # session, 초기화
      sess = tf.Session()
      sess.run(tf.global_variables_initializer())
      
-     # 학습
-     for step in range(300000):
-         _, W_val, b_val, loss_val = sess.run([train, W, b, loss],
-                                             feed_dict={X: x_data,
-                                                        T: t_data})
-         if step % 30000 == 0:
+     for step in range(1000000):
+         
+         _, W_val, b_val, loss_val = sess.run([train, W, b, loss], 
+                                              feed_dict={X: scaled_x_data, T: t_data})
+         if step % 100000 == 0:
              print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
              
-             
-     study_hour = np.array([[13]])        
-     result = sess.run(H, feed_dict={X: study_hour})   
-     print(result) # [0.58021265]
-     ```
-
      
-
-  3. sklearn를 이용해서 Logistic Regression을 구현
+     print("tensorflow 예측 결과 : {}".format(sess.run(H, feed_dict={X: scaled_predict_data}))) # tensorflow 예측 결과 : [[0.57590145]]
+     ```
+     
+     
+     
+  4. sklearn를 이용해서 Logistic Regression을 구현
 
      ```python
-     from sklearn import linear_model
+     # 2. sklearn
      
      model = linear_model.LogisticRegression()
      
      model.fit(x_data,t_data.ravel())
      
-     study_hour = np.array([[13]])
-     print(model.predict(study_hour)) # [0]    
+     print('W: {}, b: {}'.format(model.coef_, model.intercept_))
      
-     result_pro = model.predict_proba(study_hour)
-     print(result_pro)    # [[0.50009391 0.49990609]] 아주 근소하게 불합격!!
+     print("sklearn 예측 결과 : {}".format(model.predict(predict_data)))
+     # sklearn 예측 결과 : [1]
+     
+     result_pro = model.predict_proba(predict_data)
+     print(result_pro) # [[0.43740782 0.56259218]]
      ```
 
-     
 
+  
 
+  5. Confusion Matrix
 
+     분류 model이 잘 만들어진 모델인지 확인하기 위한 기준
 
+     1. Pression(정밀도) : True로 예측한 것 중 실제 True인 것의 비율
 
+        = TP/(TP+FP)
+
+     2. Recall(재현율) : 실제 True 중에 True로 예측한 것의 비율
+
+        = TP/(TP+FN)
+
+     3. Acurracy(정확도) : True을 True로, False를 False로 예측한 것의 비율
+
+        = TP+FN/(TP+FN+FP+TN)
+
+        domain의 bias를 반드시 고려해야 한다.
