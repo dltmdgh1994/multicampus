@@ -363,6 +363,50 @@ print(sess.run([node3, node1])) # [40.0, 10.0]
 
 
 
+## Learning Rate
+
+W와 b를 갱신할 때 사용되는 customizin 상수로 데이터에 따라 적절히 조정
+
+* 필요 이상으로 크게 설정 => Overshooting
+
+  <img src="md-images/overshooting.PNG" alt="overshooting" style="zoom:80%;" />
+
+* 필요 이상으로 작게 설정 => local minimal
+
+  <img src="md-images/local_minimum.PNG" alt="local_minimum" style="zoom:80%;" />
+
+
+
+## 과대적합/과소적합
+
+데이터를 이용해 학습이 끝난 후 우리 model의 상태를 지칭하는 용어
+
+* 과대적합(Overfitting)
+
+  Model이 train 데이터에 너무 적합해서 다른 데이터에는 잘 예측하지 못한다.
+
+  해결방법 => 적절한 epoch 수, 많은 데이터 양, feature의 개수를 줄인다.
+
+  <img src="md-images/overfitting.PNG" alt="overfitting" style="zoom:80%;" />
+
+* 과소적합(Underfitting)
+
+  Model이 충분한 학습을 하지 못해 Model 자체가 비완성
+
+
+
+## 성능 평가
+
+train 데이터로 성능 평가하지 않는다.
+
+train 데이터와 validation 데이터로 최적 epoch 수를 결정
+
+데이터가 적을 경우 k-fold cross validation을 진행
+
+![evaluation](md-images/evaluation.PNG)
+
+
+
 ## Regression
 
 Regression Model(회귀 모델)은 어떠한 데이터에 대해서 그 값에 영향을 주는 조건을 고려하여 데이터의 평균을 구하기 위한 함수. 즉, 그 데이터를 가장 잘 표현하는 함수.
@@ -892,11 +936,11 @@ Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데�
      ```
 
 
-  
 
-  5. Confusion Matrix
 
-     분류 model이 잘 만들어진 모델인지 확인하기 위한 기준
+  5. 성능 평가
+
+     Confusion Matrix : 분류 model이 잘 만들어진 모델인지 확인하기 위한 기준
 
      1. Pression(정밀도) : True로 예측한 것 중 실제 True인 것의 비율
 
