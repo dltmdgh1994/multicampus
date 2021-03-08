@@ -360,6 +360,18 @@ print(sess.run([node3, node1])) # [40.0, 10.0]
       이상치에 크게 영향을 받지 않지만, 동일한 scale을 적용할 수 없다.
 
       ![z-score_normalization](md-images/z-score_normalization.PNG)
+      
+      
+   
+3. 데이터 split
+
+   train 데이터와 validation 데이터로 최적 epoch 수를 결정
+
+   데이터가 적을 경우 k-fold cross validation을 진행
+
+   <img src="md-images/evaluation.PNG" alt="evaluation" style="zoom:80%;" />
+
+   
 
 
 
@@ -399,11 +411,21 @@ W와 b를 갱신할 때 사용되는 customizin 상수로 데이터에 따라 �
 
 train 데이터로 성능 평가하지 않는다.
 
-train 데이터와 validation 데이터로 최적 epoch 수를 결정
+Confusion Matrix : 분류 model이 잘 만들어진 모델인지 확인하기 위한 기준
 
-데이터가 적을 경우 k-fold cross validation을 진행
+1. Pression(정밀도) : True로 예측한 것 중 실제 True인 것의 비율
 
-![evaluation](md-images/evaluation.PNG)
+   = TP/(TP+FP)
+
+2. Recall(재현율) : 실제 True 중에 True로 예측한 것의 비율
+
+   = TP/(TP+FN)
+
+3. Acurracy(정확도) : True을 True로, False를 False로 예측한 것의 비율
+
+   = TP+FN/(TP+FN+FP+TN)
+
+   domain의 bias를 반드시 고려해야 한다
 
 
 
@@ -942,30 +964,81 @@ Binary Classification
      result_pro = model.predict_proba(predict_data)
      print(result_pro) # [[0.43740782 0.56259218]]
      ```
-
-
-
-
-  5. 성능 평가
-
-     Confusion Matrix : 분류 model이 잘 만들어진 모델인지 확인하기 위한 기준
-
-     1. Pression(정밀도) : True로 예측한 것 중 실제 True인 것의 비율
-
-        = TP/(TP+FP)
-
-     2. Recall(재현율) : 실제 True 중에 True로 예측한 것의 비율
-
-        = TP/(TP+FN)
-
-     3. Acurracy(정확도) : True을 True로, False를 False로 예측한 것의 비율
-
-        = TP+FN/(TP+FN+FP+TN)
-
-        domain의 bias를 반드시 고려해야 한다.
+     
 
 
 
 ## Mutinomial Classification
 
 여러 개의 분류 중 어떤 분류에 속하는지 예측
+
+<img src="md-images/multinomial_classification.PNG" alt="multinomial_classification" style="zoom:75%;" />
+
+<img src="md-images/softmax.PNG" alt="softmax" style="zoom:75%;" />
+
+logistic regression을 통해 각각의 label에 대해서 구한 0~1사이의 값(sigmoid)을 softmax를 통해서 각각이 나올 확률(총합=1)을 구함
+
+1. 데이터 전처리
+
+   ```python
+   import numpy as np
+   import pandas as pd
+   import matplotlib.pyplot as plt
+   import tensorflow as tf
+   from sklearn import linear_model
+   from sklearn.preprocessing import MinMaxScaler
+   from scipy import stats
+   
+   df = pd.read_csv('./bmi.csv')
+   
+   train_x_data = df[['height', 'weight']].values
+   train_y_data = df['label'].values
+       
+   ### 정규화
+   scaler_x = MinMaxScaler()
+   scaler_x.fit(train_x_data)
+   norm_x_data = scaler_x.transform(train_x_data)
+      
+   ### tensorflow 기능을 이용해서 one hot encoding을 생성
+   sess = tf.Session()
+   norm_t_data = sess.run(tf.one_hot(train_y_data, depth=3))
+   ```
+
+   
+
+2. tensorflow
+
+   ```python
+   # placeholder
+   X = tf.placeholder(shape=[None,2], dtype=tf.float32)
+   T = tf.placeholder(shape=[None,3], dtype=tf.float32)
+   
+   # Weight & bias
+   W = tf.Variable(tf.random.normal([2,3]), name='weight')
+   b = tf.Variable(tf.random.normal([3]), name='bias')
+   
+   # Hypothesis
+   logit = tf.matmul(X,W) + b
+   H = tf.nn.softmax(logit)   # Softmax Activation function 이용
+   
+   # loss
+   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit, labels=T))
+   
+   # train
+   train = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(loss)
+   
+   # 초기화
+   sess.run(tf.global_variables_initializer())
+   
+   # 학습진행
+   for step in range(100000):
+       _, W_val, b_val, loss_val = sess.run([train,W,b,loss], 
+                                                feed_dict={X:norm_x_data,
+                                                           T:norm_t_data})
+       if step % 100000 == 0:
+           print('W : {}, b: {}, loss: {}'.format(W_val, b_val, loss_val))
+   ```
+
+   
+
+   
