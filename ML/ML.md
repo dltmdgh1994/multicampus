@@ -427,6 +427,10 @@ Confusion Matrix : 분류 model이 잘 만들어진 모델인지 확인하기 �
 
    domain의 bias를 반드시 고려해야 한다
 
+![confusion_matrix](md-images/confusion_matrix.PNG)
+
+​		이런 식으로 어떤 것을 다른 특정한 것으로 착각했다던지를 파악할 수 있다.
+
 
 
 ## Regression
@@ -978,6 +982,8 @@ Binary Classification
 
 logistic regression을 통해 각각의 label에 대해서 구한 0~1사이의 값(sigmoid)을 softmax를 통해서 각각이 나올 확률(총합=1)을 구함
 
+* BMI 예제
+
 1. 데이터 전처리
 
    ```python
@@ -991,22 +997,25 @@ logistic regression을 통해 각각의 label에 대해서 구한 0~1사이의 �
    
    df = pd.read_csv('./bmi.csv')
    
-   train_x_data = df[['height', 'weight']].values
-   train_y_data = df['label'].values
-       
-   ### 정규화
-   scaler_x = MinMaxScaler()
-   scaler_x.fit(train_x_data)
-   norm_x_data = scaler_x.transform(train_x_data)
-      
-   ### tensorflow 기능을 이용해서 one hot encoding을 생성
+   # Data Split ( Train Data와 Test Data로 나눌꺼예요! )
+   x_data_train, x_data_test, t_data_train, t_data_test = train_test_split(df[['height', 'weight']],df['label'], test_size=0.3, random_state=0)  # random_state는 seed의 개념과 같아요!
+   
+   # Min-Max Scaler를 이용해서 정규화(Normalization)진행
+   scaler = MinMaxScaler()
+   scaler.fit(x_data_train)
+   x_data_train_norm = scaler.transform(x_data_train)
+   x_data_test_norm = scaler.transform(x_data_test)
+   
+   # One hot encoding
    sess = tf.Session()
-   norm_t_data = sess.run(tf.one_hot(train_y_data, depth=3))
+   t_data_train_onehot = sess.run(tf.one_hot(t_data_train, depth=3))
+   t_data_test_onehot = sess.run(tf.one_hot(t_data_test, depth=3))
+   
    ```
 
    
 
-2. tensorflow
+2. logistic regression을 이용하여 모델 생성
 
    ```python
    # placeholder
@@ -1030,13 +1039,259 @@ logistic regression을 통해 각각의 label에 대해서 구한 0~1사이의 �
    # 초기화
    sess.run(tf.global_variables_initializer())
    
-   # 학습진행
-   for step in range(100000):
-       _, W_val, b_val, loss_val = sess.run([train,W,b,loss], 
-                                                feed_dict={X:norm_x_data,
-                                                           T:norm_t_data})
-       if step % 100000 == 0:
-           print('W : {}, b: {}, loss: {}'.format(W_val, b_val, loss_val))
+   # 학습용 함수
+   def run_train(sess,train_x, train_t):
+       print('### 학습 시작 ###')
+       # 초기화
+       sess.run(tf.global_variables_initializer())
+       
+       for step in range(num_of_epoch):
+           total_batch = int(train_x.shape[0] / batch_size)
+           
+           for i in range(total_batch):
+               batch_x = train_x[i*batch_size:(i+1)*batch_size]
+               batch_t = train_t[i*batch_size:(i+1)*batch_size]           
+               _, loss_val = sess.run([train,loss],
+                                      feed_dict={X: batch_x,
+                                                 T: batch_t})
+               
+           if step % 100 == 0:
+               print('Loss : {}'.format(loss_val))
+       print('### 학습 종료 ###')
+       
+   # Accuracy    
+   predict = tf.argmax(H,1)
+   correct = tf.equal(predict, tf.argmax(T,1))
+   accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32))
+   ```
+
+
+
+
+3. 학습
+
+   ```python
+   # K-Fold Cross Validation
+   cv = 5          # Fold의 수
+   results = []    # 각 Fold당 학습과 성능평가가 진행되는데 
+                   # 이때 계산된 성능평가 값을 저장
+   kf = KFold(n_splits=cv, shuffle=True) 
+   
+   for training_idx, validation_idx in kf.split(x_data_train_norm):
+       training_x = x_data_train_norm[training_idx] # Fancy indexing
+       training_t = t_data_train_onehot[training_idx]
+       
+       val_x = x_data_train_norm[validation_idx]
+       val_t = t_data_train_onehot[validation_idx]
+       
+       # 학습부터 시켜야 해요!
+       run_train(sess,training_x,training_t)
+       acc = sess.run(accuracy, feed_dict={X:val_x, T:val_t})
+       print('측정한 각각의 결과값 : {}'.format(acc))
+       results.append(acc)
+   
+   print('최종 K-Fold 교차검증을 사용한 Accuracy : {}'.format(np.mean(results)))
+   ```
+
+
+
+4. 평가
+
+   ``` python
+   from sklearn.metrics import confusion_matrix, classification_report
+   
+   ## Testing
+   final_accuracy = sess.run(accuracy, feed_dict={X:x_data_test_norm,
+                                                  T:t_data_test_onehot})
+   print('우리 Model의 최종 정확도는 : {}'.format(final_accuracy))
+   # 우리 Model의 최종 정확도는 : 0.9828333258628845
+   
+   ## classification_report
+   target_names=['0', '1', '2']
+   
+   print(
+   classification_report(t_data_test,
+                        sess.run(predict, feed_dict={X:x_data_test_norm}),
+                        target_names = target_names))
+   
+   #              precision    recall  f1-score   support
+   
+   #           0       0.99      0.99      0.99      1902
+   #           1       0.97      0.97      0.97      1760
+   #           2       0.99      0.99      0.99      2338
+   
+   #    accuracy                           0.98      6000
+   #   macro avg       0.98      0.98      0.98      6000
+   #weighted avg       0.98      0.98      0.98      6000
+   
+   
+   ## confusion_matrix
+   print(
+   confusion_matrix(t_data_test,
+                        sess.run(predict, feed_dict={X:x_data_test_norm})))
+   
+   # [[1880   22    0]
+   #  [  26 1709   25]
+   #  [   0   25 2313]]
+   
+   
+   ```
+
+
+
+* MNIST 손글씨 예제
+
+1. 데이터 전처리
+
+   ```python
+   import numpy as np
+   import pandas as pd
+   import tensorflow as tf
+   from sklearn.preprocessing import MinMaxScaler       # Normalization
+   from sklearn.model_selection import train_test_split # train, test 분리
+   from sklearn.model_selection import KFold            # Cross Validation
+   
+   train = pd.read_csv('./digital_train.csv')
+   test = pd.read_csv('./digital_test.csv')
+   
+   train_label = train['label']
+   train.drop(['label'], axis=1, inplace=True)
+   
+   ### 정규화
+   scaler_train = MinMaxScaler()
+   scaler_train.fit(train)
+   norm_train_x = scaler_train.transform(train)
+   
+   scaler_test = MinMaxScaler()
+   scaler_test.fit(train)
+   norm_test_x = scaler_test.transform(test)
+   
+   ### tensorflow 기능을 이용해서 one hot encoding을 생성
+   sess = tf.Session()
+   onehot_train_label = sess.run(tf.one_hot(train_label, depth=10))
+   
+   ```
+
+   
+
+2. logistic regression을 이용하여 모델 생성
+
+   ```python
+   # placeholder
+   X = tf.placeholder(shape=[None,784], dtype=tf.float32)
+   T = tf.placeholder(shape=[None,10], dtype=tf.float32)
+   
+   # Weight & bias
+   W = tf.Variable(tf.random.normal([784,10]), name='weight')
+   b = tf.Variable(tf.random.normal([10]), name='bias')
+   
+   # Hypothesis
+   logit = tf.matmul(X,W) + b
+   H = tf.nn.softmax(logit)  # softmax activation function
+   
+   # loss function
+   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logit,
+                                                                    labels=T))
+   # train
+   train = tf.train.GradientDescentOptimizer(learning_rate=0.1).minimize(loss)
+   
+   # parameter
+   num_of_epoch = 1000
+   batch_size = 100
+   
+   # 학습용 함수
+   def run_train(sess,train_x, train_t):
+       print('### 학습 시작 ###')
+       # 초기화
+       sess.run(tf.global_variables_initializer())
+       
+       for step in range(num_of_epoch):
+           total_batch = int(train_x.shape[0] / batch_size)
+           
+           for i in range(total_batch):
+               batch_x = train_x[i*batch_size:(i+1)*batch_size]
+               batch_t = train_t[i*batch_size:(i+1)*batch_size]           
+               _, loss_val = sess.run([train,loss],
+                                      feed_dict={X: batch_x, T: batch_t})
+               
+           if step % 500 == 0:
+               print('Loss : {}'.format(loss_val))
+       print('### 학습 종료 ###')
+   
+   ```
+
+   
+
+3. 학습
+
+   ```python
+   # Accuracy    
+   predict = tf.argmax(H,1)
+   correct = tf.equal(predict, tf.argmax(T,1))
+   accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32))
+   
+   # K-Fold Cross Validation
+   cv = 5          # Fold의 수
+   results = []    # 각 Fold당 학습과 성능평가가 진행되는데 
+                   # 이때 계산된 성능평가 값을 저장
+   kf = KFold(n_splits=cv, shuffle=True) 
+   
+   for training_idx, validation_idx in kf.split(norm_train_x):
+       training_x = norm_train_x[training_idx] # Fancy indexing
+       training_t = onehot_train_label[training_idx]
+       
+       val_x = norm_train_x[validation_idx]
+       val_t = onehot_train_label[validation_idx]
+       
+       # 학습부터 시켜야 해요!
+       run_train(sess,training_x,training_t)
+       acc = sess.run(accuracy, feed_dict={X:val_x, T:val_t})
+       print('측정한 각각의 결과값 : {}'.format(acc))
+       results.append(acc)
+   
+   print('최종 K-Fold 교차검증을 사용한 Accuracy : {}'.format(np.mean(results)))
+   ```
+
+   
+
+4. 평가
+
+   ```python
+   # 공식을 이용해서 직접 img를 흑백처리
+   
+   from PIL import Image
+   import matplotlib.pyplot as plt
+   
+   img = np.asarray(Image.open('8.png'))
+   
+   # 그레이 스케일링
+   r = 0.2989
+   g = 0.5870
+   b = 0.1140
+   gray = img[:, :, 0] * r + img[:, :, 1] * g + img[:, :, 2] * b
+   img = Image.fromarray(gray)
+   
+   # 사이즈 조절
+   img = img.resize((28,28))
+   
+   # 흑백 반전
+   img = np.asarray(img)
+   img = 255 - img 
+   
+   # 예측
+   plt.imshow(img, cmap='Greys')
+   plt.show()
+   
+   norm_img = scaler_test.transform(img.reshape(1,-1))
+   
+   result = sess.run(H, feed_dict={X: norm_img})
+   
+   for i in result:
+       m = i.max()
+       for j in range(10):
+           if i[j] == m:
+               print("예측 값 : {}".format(j))
+               break
    ```
 
    
