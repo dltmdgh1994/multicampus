@@ -372,8 +372,44 @@ print(sess.run([node3, node1])) # [40.0, 10.0]
    <img src="md-images/evaluation.PNG" alt="evaluation" style="zoom:80%;" />
 
    
+   
+4. 결측치 처리
 
+   1. Deletion(결측치 제거)
 
+      결측치가 독립 변수인지 종속 변수인지, 전체 데이터에서 비중이 얼마나 되는가 고민
+
+      * Listwise 삭제방식
+
+        NaN이 존재하면 행 자체를 삭제
+
+        손쉽게 접근 가능하지만 다른 의미 있는 데이터도 삭제되는 것이 문제
+
+        데이터가 충분히 많고 NaN의 빈도가 상대적으로 적을 경우 최상의 방법
+
+      * Pairwise 삭제방식
+
+        NaN이 존재해도 행 자체를 삭제하지 않고 그 값만 모든 처리에서 제외
+
+        오히려 문제가 발생할 여지가 있음
+
+   2. Imputation(결측치 보간)
+
+      * 평균화 기법
+
+        평균(mean), 중앙값(median), 최빈값(mode)을 NaN에 삽입
+
+        쉽고 빠르지만, 통계 분석에 영향을 미친다.
+
+      * 예측 기법
+
+        결측치들이 완전히 무작위적으로 관측되지 않았다는 것을 가정 => 종속변수
+
+        KNN 등을 이용해서 진행
+
+        일반적으로 평균화 기법보다는 조금 더 나은 결측치 보간 가능
+
+        
 
 ## Learning Rate
 
@@ -450,326 +486,321 @@ Regression Model(회귀 모델)은 어떠한 데이터에 대해서 그 값에 �
   * 독립변수와 오차항은 독립 등등
 
     
+### Simple Linear Regression
 
-* Classical Linear Regression Model
+![simple_linear_regression](md-images/simple_linear_regression.PNG)
 
-  ![classical_linear_regression_model](md-images/classical_linear_regression_model.PNG)
+* MSE
 
-  * MSE
-
-    ![MSE](md-images/MSE.PNG)
-
-    
-
-  * 손실 함수(Loss Function) = 비용 함수(Cost Function)
-
-    훈련 데이터 셋의 정답 t와 입력 x에 대한 y(모델의 예측값)의 차이를 모두 더해 수식으로 나타낸 식 => MSE를 이용
-
-    최소제곱법을 이용해서 loss function을 만들고 그 값이 최소가 되게 하는 w와 b를 학습 과정을 통해 찾는다.
-
-    ![loss_function](md-images/loss_function.PNG)
-
-    
-
-  * 경사하강법(Gradient Descent Algorithm)
-
-    loss function의 값이 최소가 되게 하는 w를 찾기 위한 방법으로,  loss function의 미분값이 0이 되는 w를 찾기 위해 w를 조금씩 줄여가면서 찾는다.
-
-    ![gradient_descent_algorithm](md-images/gradient_descent_algorithm.PNG)
-
-    여기서, epoch와 learning late를 통해 접근을 조절
+  ![MSE](md-images/MSE.PNG)
 
   
+
+* 손실 함수(Loss Function) = 비용 함수(Cost Function)
+
+  훈련 데이터 셋의 정답 t와 입력 x에 대한 y(모델의 예측값)의 차이를 모두 더해 수식으로 나타낸 식 => MSE를 이용
+
+  최소제곱법을 이용해서 loss function을 만들고 그 값이 최소가 되게 하는 w와 b를 학습 과정을 통해 찾는다.
+
+  ![loss_function](md-images/loss_function.PNG)
+
+  
+
+* 경사하강법(Gradient Descent Algorithm)
+
+  loss function의 값이 최소가 되게 하는 w를 찾기 위한 방법으로,  loss function의 미분값이 0이 되는 w를 찾기 위해 w를 조금씩 줄여가면서 찾는다.
+
+  ![gradient_descent_algorithm](md-images/gradient_descent_algorithm.PNG)
+
+  여기서, epoch와 learning late를 통해 접근을 조절
+
+1. data 전처리
+
+   ```python
+     import numpy as np
+     import pandas as pd
+     from sklearn.preprocessing import MinMaxScaler
+     from scipy import stats
+     
+     # 1. csv 파일 로딩
+     df = pd.read_csv('./ozone.csv')
+     train_data = df[['Temp','Ozone']]
+     
+     # 2. 결측치 제거
+     train_data = train_data.dropna(how='any')
+     
+     # 3. 이상치 제거
+     zscore_threshold = 1.8
+     
+     for col in train_data.columns:
+         tmp = ~(np.abs(stats.zscore(train_data[col])) > zscore_threshold)
+         train_data = train_data.loc[tmp]
+     
+     x_data = train_data['Temp'].values.reshape(-1,1)
+     t_data = train_data['Ozone'].values.reshape(-1,1)
+     
+     # 4. 정규화
+     scaler_x = MinMaxScaler()  # 객체 생성
+     scaler_t = MinMaxScaler()  # 객체 생성
+     
+     scaler_x.fit(x_data)
+     scaler_t.fit(t_data)
+   
+     scaled_x_data = scaler_x.transform(x_data)
+     scaled_t_data = scaler_t.transform(t_data)
+   ```
+
+   
+
+2. Tensorflow를 이용해서 Simple Linear Regression을 구현
+
+   ```python
+     import tensorflow as tf  
+         
+     # 1. placeholder => 데이터는 아직. 모형만
+     X = tf.placeholder(shape=[None,1], dtype=tf.float32)
+     T = tf.placeholder(shape=[None,1], dtype=tf.float32)
+       
+     # 2. Weight & bias   
+     W = tf.Variable(tf.random.normal([1,1]), name='weight')
+     b = tf.Variable(tf.random.normal([1]), name='bias')
+       
+     # 3. Hypothesis or predict model
+     H = tf.matmul(X,W) + b
+       
+     # 4.loss function
+     loss = tf.reduce_mean(tf.square(H - T))
+       
+     # 5. train
+     train = tf.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(loss)
+       
+     # 6. session & 초기화
+     sess = tf.Session()
+     sess.run(tf.global_variables_initializer())
+       
+     # 7. 학습을 진행
+     for step in range(600000):
+         
+         _, W_val, b_val, loss_val = sess.run([train, W, b, loss], 
+                                              feed_dict={X: scaled_x_data, T: scaled_t_data})
+         if step % 30000 == 0:
+             print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
+               
+     # 8. 예측
+     predict_data = np.array([[80]])
+     scaled_predict_data = scaler_x.transform(predict_data)
+     print("tensorflow 예측 결과 : {}".format(scaler_t.inverse_transform(sess.run(H, feed_dict={X: scaled_predict_data})))) # tensorflow 예측 결과 : [[42.08464]]
+     
+   ```
+
+   
+
+3. python을 이용해서 Simple Linear Regression을 구현
+
+   ```python
+     # 1. Weight & bias
+     W1 = np.random.rand(1,1)   
+     b1 = np.random.rand(1)
+     
+     # 2. Hypothesis
+     def predict(x):
+         
+         y = np.dot(x,W1) + b1   
+         
+         return y
+     
+     # 3. loss_function
+     def loss_func(input_obj):
+         
+         input_W = input_obj[0]
+         input_b = input_obj[1]
+         
+         y = np.dot(scaled_x_data,input_W) + input_b
+         
+         return np.mean(np.power((scaled_t_data - y),2))
+     
+     # 4. 편미분을 위한 함수
+     def numerical_derivative(f,x):
+         
+         delta_x = 1e-4
+         derivative_x = np.zeros_like(x)    # [0 0]
+         
+         it = np.nditer(x, flags=['multi_index'])
+         
+         while not it.finished:
+             
+             idx = it.multi_index        
+             tmp = x[idx] 
+             x[idx] = tmp + delta_x        
+             fx_plus_delta = f(x)    # f([1.00001, 2.0])   => f(x + delta_x)
+             
+             x[idx] = tmp - delta_x
+             fx_minus_delta = f(x)   # f([0.99999, 2.0])   => f(x - delta_x)
+             
+             derivative_x[idx] = (fx_plus_delta - fx_minus_delta) / (2 * delta_x)
+             
+             x[idx] = tmp
+             
+             it.iternext()
+             
+         return derivative_x
+     
+     # learning rate 설정
+     learning_rate = 1e-4
+     
+     # 5. 학습을 진행
+     for step in range(600000):
+         input_param = np.concatenate((W1.ravel(), b1.ravel()), axis=0)  
+         
+         derivative_result = learning_rate * numerical_derivative(loss_func,input_param)
+         
+         W1 = W1 - derivative_result[:1].reshape(1,1)  # W 갱신
+         b1 = b1 - derivative_result[1:]               # b 갱신
+     
+         if step % 30000 == 0:
+             print('W : {}, b : {}'.format(W1,b1))
+             
+     # 6. 예측
+     predict_data = np.array([[80]])
+     scaled_predict_data = scaler_x.transform(predict_data)
+     print("python 예측 결과 : {}".format(scaler_t.inverse_transform(predict(scaled_predict_data))))
+     # python 예측 결과 : [[42.06771086]]
+   ```
+
+   
+
+4. sklearn를 이용해서 Simple Linear Regression을 구현
+
+   sklearn은 자동으로 data를 정규화하기 때문에 사전에 이상치 제거만 하면 된다.
+
+   ```python
+     from sklearn import linear_model
+     
+     # 1. linear regression model 생성
+     model = linear_model.LinearRegression()
+     
+   # 2. 학습진행
+     model.fit(x_data, t_data)
+   
+     # 3. Weight, bias 확인
+   print('W : {}, b : {}'.format(model.coef_, model.intercept_))
+     
+     # 4. 예측
+     predict_data = np.array([[80]])
+     print("sklearn 예측 결과 : {}".format(model.predict(predict_data)))
+     # sklearn 예측 결과 : [[42.07085704]]
+   ```
+
+
+
+### Multiple Linear Regression
+
+![multiple_linear_regression](md-images/multiple_linear_regression.PNG)
+
+
+
 1. data 전처리
 
 ```python
-  import numpy as np
-  import pandas as pd
-  from sklearn.preprocessing import MinMaxScaler
-  from scipy import stats
-  
-  # 1. csv 파일 로딩
-  df = pd.read_csv('./ozone.csv')
-  train_data = df[['Temp','Ozone']]
-  
-  # 2. 결측치 제거
-  train_data = train_data.dropna(how='any')
-  
-  # 3. 이상치 제거
-  zscore_threshold = 1.8
-  
-  for col in train_data.columns:
-      tmp = ~(np.abs(stats.zscore(train_data[col])) > zscore_threshold)
-      train_data = train_data.loc[tmp]
-  
-  x_data = train_data['Temp'].values.reshape(-1,1)
-  t_data = train_data['Ozone'].values.reshape(-1,1)
-  
-  # 4. 정규화
-  scaler_x = MinMaxScaler()  # 객체 생성
-  scaler_t = MinMaxScaler()  # 객체 생성
-  
-  scaler_x.fit(x_data)
-  scaler_t.fit(t_data)
+# Multiple Linear Regression
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from sklearn import linear_model
+from sklearn.preprocessing import MinMaxScaler
+from scipy import stats
 
-  scaled_x_data = scaler_x.transform(x_data)
-  scaled_t_data = scaler_t.transform(t_data)
+df = pd.read_csv('./ozone.csv')
+
+# 학습에 필요한 데이터부터 추출
+train_data = df[['Temp','Wind','Solar.R','Ozone']]
+
+# 결측치 처리
+train_data = train_data.dropna(how='any')
+
+# 이상치 처리
+zscore_threshold = 1.8
+
+for col in train_data.columns:
+    tmp = ~(np.abs(stats.zscore(train_data[col])) > zscore_threshold)
+    train_data = train_data.loc[tmp]
+    
+x_data = train_data[['Temp','Solar.R','Wind']].values
+t_data = train_data['Ozone'].values.reshape(-1,1)
+
+# 정규화 처리
+scaler_x = MinMaxScaler()  # 객체 생성
+scaler_t = MinMaxScaler()  # 객체 생성
+
+scaler_x.fit(train_data[['Temp','Solar.R','Wind']].values)
+scaler_t.fit(train_data['Ozone'].values.reshape(-1,1))
+
+scaled_x_data = scaler_x.transform(train_data[['Temp','Solar.R','Wind']].values)
+scaled_t_data = scaler_t.transform(train_data['Ozone'].values.reshape(-1,1))
 ```
 
-  
-
-  1. Tensorflow를 이용해서 Simple Linear Regression을 구현
-
-  ```python
-  import tensorflow as tf  
-      
-  # 1. placeholder => 데이터는 아직. 모형만
-  X = tf.placeholder(shape=[None,1], dtype=tf.float32)
-  T = tf.placeholder(shape=[None,1], dtype=tf.float32)
-    
-  # 2. Weight & bias   
-  W = tf.Variable(tf.random.normal([1,1]), name='weight')
-  b = tf.Variable(tf.random.normal([1]), name='bias')
-    
-  # 3. Hypothesis or predict model
-  H = tf.matmul(X,W) + b
-    
-  # 4.loss function
-  loss = tf.reduce_mean(tf.square(H - T))
-    
-  # 5. train
-  train = tf.train.GradientDescentOptimizer(learning_rate=1e-3).minimize(loss)
-    
-  # 6. session & 초기화
-  sess = tf.Session()
-  sess.run(tf.global_variables_initializer())
-    
-  # 7. 학습을 진행
-  for step in range(600000):
-      
-      _, W_val, b_val, loss_val = sess.run([train, W, b, loss], 
-                                           feed_dict={X: scaled_x_data, T: scaled_t_data})
-      if step % 30000 == 0:
-          print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
-            
-  # 8. 예측
-  predict_data = np.array([[80]])
-  scaled_predict_data = scaler_x.transform(predict_data)
-  print("tensorflow 예측 결과 : {}".format(scaler_t.inverse_transform(sess.run(H, feed_dict={X: scaled_predict_data})))) # tensorflow 예측 결과 : [[42.08464]]
-  
-  ```
 
 
+2. tensorflow을 이용해서 Multiple Linear Regression을 구현
 
-2. python를 이용해서 Simple Linear Regression을 구현
+```python
+X = tf.placeholder(shape=[None,3], dtype=tf.float32)
+T = tf.placeholder(shape=[None,1], dtype=tf.float32)
 
-``` python
-  # 1. Weight & bias
-  W1 = np.random.rand(1,1)   
-  b1 = np.random.rand(1)
-  
-  # 2. Hypothesis
-  def predict(x):
-      
-      y = np.dot(x,W1) + b1   
-      
-      return y
-  
-  # 3. loss_function
-  def loss_func(input_obj):
-      
-      input_W = input_obj[0]
-      input_b = input_obj[1]
-      
-      y = np.dot(scaled_x_data,input_W) + input_b
-      
-      return np.mean(np.power((scaled_t_data - y),2))
-  
-  # 4. 편미분을 위한 함수
-  def numerical_derivative(f,x):
-      
-      delta_x = 1e-4
-      derivative_x = np.zeros_like(x)    # [0 0]
-      
-      it = np.nditer(x, flags=['multi_index'])
-      
-      while not it.finished:
-          
-          idx = it.multi_index        
-          tmp = x[idx] 
-          x[idx] = tmp + delta_x        
-          fx_plus_delta = f(x)    # f([1.00001, 2.0])   => f(x + delta_x)
-          
-          x[idx] = tmp - delta_x
-          fx_minus_delta = f(x)   # f([0.99999, 2.0])   => f(x - delta_x)
-          
-          derivative_x[idx] = (fx_plus_delta - fx_minus_delta) / (2 * delta_x)
-          
-          x[idx] = tmp
-          
-          it.iternext()
-          
-      return derivative_x
-  
-  # learning rate 설정
-  learning_rate = 1e-4
-  
-  # 5. 학습을 진행
-  for step in range(600000):
-      input_param = np.concatenate((W1.ravel(), b1.ravel()), axis=0)  
-      
-      derivative_result = learning_rate * numerical_derivative(loss_func,input_param)
-      
-      W1 = W1 - derivative_result[:1].reshape(1,1)  # W 갱신
-      b1 = b1 - derivative_result[1:]               # b 갱신
-  
-      if step % 30000 == 0:
-          print('W : {}, b : {}'.format(W1,b1))
-          
-  # 6. 예측
-  predict_data = np.array([[80]])
-  scaled_predict_data = scaler_x.transform(predict_data)
-  print("python 예측 결과 : {}".format(scaler_t.inverse_transform(predict(scaled_predict_data))))
-  # python 예측 결과 : [[42.06771086]]
+W = tf.Variable(tf.random.normal([3,1]), name='weight')
+b = tf.Variable(tf.random.normal([1]), name='bias')
+
+H = tf.matmul(X,W) + b
+
+loss = tf.reduce_mean(tf.square(H - T))
+
+train = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(loss)
+
+sess = tf.Session()
+sess.run(tf.global_variables_initializer())
+
+for step in range(600000):
+    
+    _, W_val, b_val, loss_val = sess.run([train, W, b, loss], 
+                                         feed_dict={X: scaled_x_data, T: scaled_t_data})
+    if step % 30000 == 0:
+        print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
+
+predict_data = np.array([[80.0, 150.0, 10.0]])
+scaled_predict_data = scaler_x.transform(predict_data)
+
+print("tensorflow 예측 결과 : {}".format(scaler_t.inverse_transform(sess.run(H, feed_dict={X: scaled_predict_data}))))
+# tensorflow 예측 결과 : [[38.7607]]
+
 ```
 
-  
 
-  3. sklearn을 이용해서 Simple Linear Regression을 구현
-  
-     sklearn은 자동으로 data를 정규화하기 때문에 사전에 이상치 제거만 하면 된다.
 
-  ```python
-  from sklearn import linear_model
-  
-  # 1. linear regression model 생성
-  model = linear_model.LinearRegression()
-  
-# 2. 학습진행
-  model.fit(x_data, t_data)
+3. sklearn을 이용해서 Multiple Linear Regression을 구현
 
-  # 3. Weight, bias 확인
-print('W : {}, b : {}'.format(model.coef_, model.intercept_))
-  
-  # 4. 예측
-  predict_data = np.array([[80]])
-  print("sklearn 예측 결과 : {}".format(model.predict(predict_data)))
-  # sklearn 예측 결과 : [[42.07085704]]
-  ```
+   sklearn은 자동으로 data를 정규화하기 때문에 사전에 이상치 제거만 하면 된다.
+
+```python
+model2 = linear_model.LinearRegression()
+
+model2.fit(x_data,t_data)
+
+print('W: {}, b: {}'.format(model2.coef_, model2.intercept_))
+
+print("sklearn 예측 결과 : {}".format(model2.predict(predict_data)))
+# sklearn 예측 결과 : [[38.8035437]]
+```
 
 
 
-
-* Multiple Linear Regression Model
-
-  ![multiple_linear_regression_model](md-images/multiple_linear_regression_model.PNG)
-
-  
-
-  1. data 전처리
-
-  ```python
-  # Multiple Linear Regression
-  import numpy as np
-  import pandas as pd
-  import matplotlib.pyplot as plt
-  import tensorflow as tf
-  from sklearn import linear_model
-  from sklearn.preprocessing import MinMaxScaler
-  from scipy import stats
-  
-  df = pd.read_csv('./ozone.csv')
-  
-  # 학습에 필요한 데이터부터 추출
-  train_data = df[['Temp','Wind','Solar.R','Ozone']]
-  
-  # 결측치 처리
-  train_data = train_data.dropna(how='any')
-  
-  # 이상치 처리
-  zscore_threshold = 1.8
-  
-  for col in train_data.columns:
-      tmp = ~(np.abs(stats.zscore(train_data[col])) > zscore_threshold)
-      train_data = train_data.loc[tmp]
-      
-  x_data = train_data[['Temp','Solar.R','Wind']].values
-  t_data = train_data['Ozone'].values.reshape(-1,1)
-  
-  # 정규화 처리
-  scaler_x = MinMaxScaler()  # 객체 생성
-  scaler_t = MinMaxScaler()  # 객체 생성
-  
-  scaler_x.fit(train_data[['Temp','Solar.R','Wind']].values)
-  scaler_t.fit(train_data['Ozone'].values.reshape(-1,1))
-  
-  scaled_x_data = scaler_x.transform(train_data[['Temp','Solar.R','Wind']].values)
-  scaled_t_data = scaler_t.transform(train_data['Ozone'].values.reshape(-1,1))
-  ```
-
-  
-
-  2. tensorflow을 이용해서 Simple Linear Regression을 구현
-
-  ```python
-  X = tf.placeholder(shape=[None,3], dtype=tf.float32)
-  T = tf.placeholder(shape=[None,1], dtype=tf.float32)
-  
-  W = tf.Variable(tf.random.normal([3,1]), name='weight')
-  b = tf.Variable(tf.random.normal([1]), name='bias')
-  
-  H = tf.matmul(X,W) + b
-  
-  loss = tf.reduce_mean(tf.square(H - T))
-  
-  train = tf.train.GradientDescentOptimizer(learning_rate=1e-4).minimize(loss)
-  
-  sess = tf.Session()
-  sess.run(tf.global_variables_initializer())
-  
-  for step in range(600000):
-      
-      _, W_val, b_val, loss_val = sess.run([train, W, b, loss], 
-                                           feed_dict={X: scaled_x_data, T: scaled_t_data})
-      if step % 30000 == 0:
-          print('W : {}, b : {}, loss : {}'.format(W_val, b_val, loss_val))
-  
-  predict_data = np.array([[80.0, 150.0, 10.0]])
-  scaled_predict_data = scaler_x.transform(predict_data)
-  
-  print("tensorflow 예측 결과 : {}".format(scaler_t.inverse_transform(sess.run(H, feed_dict={X: scaled_predict_data}))))
-  # tensorflow 예측 결과 : [[38.7607]]
-  
-  ```
-
-  
-
-  3. sklearn을 이용해서 Simple Linear Regression을 구현
-
-     sklearn은 자동으로 data를 정규화하기 때문에 사전에 이상치 제거만 하면 된다.
-
-  ```python
-  model2 = linear_model.LinearRegression()
-  
-  model2.fit(x_data,t_data)
-  
-  print('W: {}, b: {}'.format(model2.coef_, model2.intercept_))
-  
-  print("sklearn 예측 결과 : {}".format(model2.predict(predict_data)))
-  # sklearn 예측 결과 : [[38.8035437]]
-  ```
-
-  
-
-## Binary Classification
-
-Classification
+## Classification
 
 Train Data Set의 특징과 분포를 이용하여 학습한 후 미지의 데이터에 대해서 결과가 어떤 종류의 값으로 분류될 수 있는지 예측하는 작업
 
 
 
-Binary Classification
+### Binary Classification
 
 0, 1 중에 어떤 값으로 분류되는지 예측
 
@@ -972,7 +1003,7 @@ Binary Classification
 
 
 
-## Mutinomial Classification
+### Mutiple Classification
 
 여러 개의 분류 중 어떤 분류에 속하는지 예측
 
@@ -1296,4 +1327,91 @@ logistic regression을 통해 각각의 label에 대해서 구한 0~1사이의 �
 
    
 
-   
+* Keras를 이용한 Logistic Regression Model 구축
+
+  ![logistic_regression_keras](md-images/logistic_regression_keras.PNG)
+
+  ```python
+  # Keras를 이용한 코드(Sample)
+  import tensorflow as tf
+  from tensorflow.keras.models import Sequential
+  from tensorflow.keras.layers import Flatten, Dense
+  from tensorflow.keras.optimizers import SGD, Adam
+  
+  model = Sequential()   # model 생성
+  model.add(Flatten(input_shape=(1,)))
+  model.add(Dense(1, activation='sigmoid' ))
+  
+  model.compile(optimizers=SGD(learning_rate=1e-3),
+                loss='mse')
+  
+  model.fit(x_data_train,
+            t_data_train,
+            epochs=10,
+            batch_size=200,
+            validation_split=0.2)
+  
+  model.evaluate(x_data_test,t_data_test)
+  model.predict(x_data_predict)
+  
+  model.save('./myModel.h5')
+  model = tf.keras.models.load_model('./myModel.h5')
+  ```
+
+
+
+## KNN (K-Nearest Neighbor)
+
+가장 가까운 훈련 데이터 포인트 k개를 최근접 이웃으로 찾아 예측에 사용하는 알고리즘
+
+새로운 데이터가 들어왔을 때 기존 data들과의 거리를 계산해 이웃을 뽑아 예측을 수행
+
+​	=> 딱히 학습이라는 절차가 필요 없다 => Instance-based learning, lazy model
+
+<img src="md-images/KNN.PNG" alt="KNN" style="zoom:75%;" />
+
+* KNN 의 장/단점
+
+  장점 : 데이터 수가 많으면 상당히 정확한 결과를 도출
+
+  단점 : 시간이 오래 걸린다
+
+* Hyperparameter
+
+  1. 이웃의 수(k)
+
+     k가 작을 경우 => 지역적 특성을 너무 반영하는 overfitting
+
+     k가 클 경우 => underfitting
+
+  2. 거리 측정 방식
+
+     Euclidean Distance, Manhattan Distance, Mahalanobis Distance
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
+# Raw Data Loading
+df = pd.read_csv('./bmi.csv', skiprows=3)
+
+# data split
+x_data_train, x_data_test, t_data_train, t_data_test = train_test_split(df[['height','weight']], df['label'],
+                test_size=0.3,
+                random_state=0)
+
+# Normalization
+scaler = MinMaxScaler()
+scaler.fit(x_data_train)
+x_data_train_norm = scaler.transform(x_data_train)
+x_data_test_norm = scaler.transform(x_data_test)
+
+# KNeighborsClassifier
+knn_classifier = KNeighborsClassifier(n_neighbors=3)
+knn_classifier.fit(x_data_train_norm,t_data_train)
+print(knn_classifier.score(x_data_test_norm,t_data_test))   # 0.998
+```
+
