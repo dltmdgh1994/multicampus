@@ -16,8 +16,6 @@
 
   데이터의 상관관계를 분석하여 새로운 feature를 알아내는 방법
 
-
-
 # Machine Learning
 
 데이터를 학습해서 미지의 데이터에 대한 prediction
@@ -410,6 +408,53 @@ print(sess.run([node3, node1])) # [40.0, 10.0]
         일반적으로 평균화 기법보다는 조금 더 나은 결측치 보간 가능
 
         
+   
+5. 예시
+
+   ```python
+   # 1. 독립변수에 대한 결측치를 검출한 후 Imputation을 진행(평균화기법-median)
+   #    median으로 처리하는 이유는 이상치를 처리하지 않았기 때문.
+   for col in x_data.columns:
+       col_median = np.nanmedian(x_data[col])
+       x_data[col].loc[x_data[col].isnull()] = col_median
+       
+   # 2. 독립변수에 대한 이상치를 검출한 후 mean값으로 처리
+   zscore_threshold = 1.8   # z-score outlier 임계값으로 사용
+   
+   for col in x_data.columns:
+       outlier = x_data[col][(np.abs(stats.zscore(x_data[col])) > zscore_threshold)]
+       col_mean = np.mean(x_data.loc[~x_data[col].isin(outlier),col])
+       x_data.loc[x_data[col].isin(outlier),col] = col_mean
+       
+   # 3. 종속변수에 대한 이상치를 검출 한 후 mean값으로 처리할께요!     
+   outlier = t_data[(np.abs(stats.zscore(t_data)) > zscore_threshold)]
+   col_mean = np.mean(t_data[~t_data.isin(outlier)])
+   t_data[t_data.isin(outlier)] = col_mean
+   
+   # 4. 정규화
+   scaler_x = MinMaxScaler()
+   scaler_t = MinMaxScaler()
+   
+   scaler_x.fit(x_data.values)
+   scaler_t.fit(t_data.values.reshape(-1,1))
+   
+   x_data_norm = scaler_x.transform(x_data.values)
+   t_data_norm = scaler_t.transform(t_data.values.reshape(-1,1)).ravel()
+   
+   # 5. 종속변수에 대한 결측치를 KNN을 이용하여 Imputation 처리
+   # NaN이 있으면 학습하지 못하므로 종속변수의 결측치를 제거
+   x_data_train_norm = x_data_norm[~np.isnan(t_data_norm)]
+   t_data_train_norm = t_data_norm[~np.isnan(t_data_norm)]
+   
+   knn_regressor = KNeighborsRegressor(n_neighbors=2)
+   knn_regressor.fit(x_data_train_norm,t_data_train_norm)
+   
+   # 종속변수의 결측치를 KNN의 예측값으로 채워줌
+   knn_predict = knn_regressor.predict(x_data_norm[np.isnan(t_data_norm)])
+   t_data_norm[np.isnan(t_data_norm)] = knn_predict
+   ```
+
+   
 
 ## Learning Rate
 
