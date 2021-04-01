@@ -1460,3 +1460,53 @@ knn_classifier.fit(x_data_train_norm,t_data_train)
 print(knn_classifier.score(x_data_test_norm,t_data_test))   # 0.998
 ```
 
+
+
+## SVM(Support Vector Machine)
+
+주어진 데이터가 어느 그룹에 속하는지 분류하는 분류 모델로 두 부류 사이에 존재하는 여백을 의미하는 **마진(margin)**을 최대화하는 모델
+
+<img src="md-images\SVM.PNG" alt="SVM" style="zoom:75%;" />
+
+여기서 마진이란 **분류선(Decision Boundary)**과 가장 가까운 데이터들과의 거리를 의미하고 이 분류선과 가장 가까운 데이터를 **서포트 벡터**라고 부른다
+
+* KNN 의 장/단점
+
+  장점 : 속도가 상당히 빠르다.
+
+  단점 : 이상치에 민감하다.
+
+* Hyperparameter
+
+  1. C(Cost) 
+
+     얼마나 많은 데이터 포인트가 다른 범위에 놓이는 것을 허용할지 정함
+
+     기본값은 1로, C가 클수록 적게 허용
+
+     C가 클수록 => 과대적합
+
+     C가 작을수록 => 과소적합 
+
+  2. Kernel
+
+     단순 직선만으로 분류가 안되는 경우가 발생! => kernel과 gamma를 조정
+
+     ![kernel](md-images\kernel.PNG)
+
+     linear, poly(polynomial), rbf(가우시안)가 있고 기본값은 rbf
+
+     poly : 2차원을 3차원으로 사상
+
+     rbf : 상위차원에 데이터를 사상
+
+  3. gamma
+
+     poly와 rbf를 kernel로 사용할 경우 지정
+
+     분류선을 얼마나 유연하게 그릴건지에 대한 정도
+
+     gamma 클수록 => 분류선은 구불구불
+
+     gamma 작을수록 => 분류선은 직선에 가깝게
+
