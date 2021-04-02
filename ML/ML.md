@@ -1405,7 +1405,7 @@ logistic regression을 통해 각각의 label에 대해서 구한 0~1사이의 �
 
 
 
-## KNN (K-Nearest Neighbor)
+## KNN(K-Nearest Neighbor)
 
 가장 가까운 훈련 데이터 포인트 k개를 최근접 이웃으로 찾아 예측에 사용하는 알고리즘
 
@@ -1470,7 +1470,7 @@ print(knn_classifier.score(x_data_test_norm,t_data_test))   # 0.998
 
 여기서 마진이란 **분류선(Decision Boundary)**과 가장 가까운 데이터들과의 거리를 의미하고 이 분류선과 가장 가까운 데이터를 **서포트 벡터**라고 부른다
 
-* KNN 의 장/단점
+* KNN의 장/단점
 
   장점 : 속도가 상당히 빠르다.
 
@@ -1509,4 +1509,133 @@ print(knn_classifier.score(x_data_test_norm,t_data_test))   # 0.998
      gamma 클수록 => 분류선은 구불구불
 
      gamma 작을수록 => 분류선은 직선에 가깝게
+
+
+
+``` python
+import numpy as np
+import pandas as pd
+from sklearn.svm import SVC
+import matplotlib.pyplot as plt
+import warnings
+from mlxtend.plotting import plot_decision_regions
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+
+df = pd.read_csv('C:/Users/s_csmscox/jupyterSave/bmi.csv')
+
+x_data = df[['height','weight']].values
+t_data = df['label'].values
+
+num_of_data = 30
+
+# label 0
+x_data_red = x_data[t_data==0][:num_of_data]
+t_data_red = t_data[t_data==0][:num_of_data]
+
+# label 1
+x_data_blue = x_data[t_data==1][:num_of_data]
+t_data_blue = t_data[t_data==1][:num_of_data]
+
+# label 2
+x_data_green = x_data[t_data==2][:num_of_data]
+t_data_green = t_data[t_data==2][:num_of_data]
+
+x_data_sample = np.concatenate((x_data_red,x_data_blue,x_data_green), axis=0)
+t_data_sample = np.concatenate((t_data_red,t_data_blue,t_data_green), axis=0)
+
+model = SVC(kernel='linear')
+model.fit(x_data_sample, t_data_sample)
+
+plot_decision_regions(X=x_data_sample,
+                      y=t_data_sample,
+                      clf=model,
+                      legend=3)
+
+plt.show()
+```
+
+![svm_plot](C:\Users\s_csmscox\jupyterSave\Multicampus\ML\md-images\svm_plot.PNG)
+
+
+
+## Decision Tree
+
+데이터를 분석해서 이들 사이에 존재하는 패턴을 파악하고 예측 가능한 규칙들의 조합을 만드는 알고리즘
+
+<img src="md-images\decision_tree.PNG" alt="decision_tree"  />
+
+영역의 순도(homogeneity)가 증가, 불순도(Impurity), **불확실성(Entropy)**가 감소하는 방향으로 학습을 진행 => 영역을 분기
+
+순도가 증가하고 불확실성이 감소하는 것을 정보이론 쪽에서는 Infomation Gain
+
+**정보 획득량 = 전체 Entropy - 분류 후 Entropy**
+
+​					=> 어떤 사건이 얼마만크의 정보를 줄 수 있을지에 대한 수치
+
+![entropy](md-images\entropy.PNG)
+
+분기 전(A)보다 분기 후(B)가 Entropy가 감소 => 분할 후가 더 좋다고 판단해서 Decision Tree의 node 분기가 진행
+
+* Decision Tree의 장/단점
+
+  장점 : 다른 모델에 비해 빠르고 간단
+
+  ​			class 개수가 적고, 데이터가 많을 때 적합
+
+  단점 : Greedy 알고리즘을 이용하기 때문에 최적의 tree를 구성하지 못할 수 있다.
+
+  ​			Overfitting이 심하다 => Prunning
+
+
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
+import warnings
+from mlxtend.plotting import plot_decision_regions
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+
+warnings.filterwarnings(action='ignore')
+
+df = pd.read_csv('C:/Users/s_csmscox/jupyterSave/bmi.csv')
+
+x_data = df[['height','weight']].values
+t_data = df['label'].values
+
+num_of_data = 100
+
+# label 0
+x_data_red = x_data[t_data==0][:num_of_data]
+t_data_red = t_data[t_data==0][:num_of_data]
+
+# label 1
+x_data_blue = x_data[t_data==1][:num_of_data]
+t_data_blue = t_data[t_data==1][:num_of_data]
+
+# label 2
+x_data_green = x_data[t_data==2][:num_of_data]
+t_data_green = t_data[t_data==2][:num_of_data]
+
+x_data_sample = np.concatenate((x_data_red,x_data_blue,x_data_green), axis=0)
+t_data_sample = np.concatenate((t_data_red,t_data_blue,t_data_green), axis=0)
+
+model = DecisionTreeClassifier()
+model.fit(x_data_sample, t_data_sample)
+
+plot_decision_regions(X=x_data_sample,
+                      y=t_data_sample,
+                      clf=model,
+                      legend=3)
+
+plt.show()
+```
+
+![decision_tree_plot](md-images\decision_tree_plot.PNG)
+
+
 
